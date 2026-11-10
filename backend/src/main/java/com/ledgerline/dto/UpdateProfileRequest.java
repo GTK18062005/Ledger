@@ -24,3 +24,4 @@ public class UpdateProfileRequest {
         this.fullName = fullName;
     }
 }
+

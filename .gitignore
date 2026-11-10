@@ -29,6 +29,11 @@ replay_pid*
 .project
 .settings/
 
+# Environment & Secrets
+.env
+.env.*
+*.env
+
 # OS Files
 .DS_Store
 Thumbs.db

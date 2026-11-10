@@ -134,3 +134,4 @@ public class UserProfileAndSecurityTests {
         assertEquals("Tharun Kumar Gangavarapu", refreshed.getFullName());
     }
 }
+

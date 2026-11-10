@@ -142,3 +142,4 @@ export default function SettingsTab({ user }) {
     </div>
   );
 }
+

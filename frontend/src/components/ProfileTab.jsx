@@ -207,3 +207,4 @@ export default function ProfileTab({ user, onUserUpdated }) {
     </div>
   );
 }
+

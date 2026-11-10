@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 @Component
-@Profile({"dev", "test"})
+@Profile({"dev", "test", "supabase"})
 public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
@@ -57,16 +57,24 @@ public class DataSeeder implements CommandLineRunner {
         String defaultPass = passwordEncoder.encode("Password123!");
 
         // 1. Admin
-        User admin = userRepository.save(new User("admin@ledgerline.io", defaultPass, Role.ADMIN));
+        User adminUser = new User("admin@ledgerline.io", defaultPass, Role.ADMIN);
+        adminUser.setFullName("System Administrator");
+        User admin = userRepository.save(adminUser);
 
         // 2. Account Holder 1 (Alice)
-        User alice = userRepository.save(new User("alice@ledgerline.io", defaultPass, Role.ACCOUNT_HOLDER));
+        User aliceUser = new User("alice@ledgerline.io", defaultPass, Role.ACCOUNT_HOLDER);
+        aliceUser.setFullName("Alice Vance");
+        User alice = userRepository.save(aliceUser);
 
         // 3. Account Holder 2 (Bob)
-        User bob = userRepository.save(new User("bob@ledgerline.io", defaultPass, Role.ACCOUNT_HOLDER));
+        User bobUser = new User("bob@ledgerline.io", defaultPass, Role.ACCOUNT_HOLDER);
+        bobUser.setFullName("Bob Smith");
+        User bob = userRepository.save(bobUser);
 
         // 4. Auditor
-        User auditor = userRepository.save(new User("auditor@ledgerline.io", defaultPass, Role.AUDITOR));
+        User auditorUser = new User("auditor@ledgerline.io", defaultPass, Role.AUDITOR);
+        auditorUser.setFullName("Compliance Auditor");
+        User auditor = userRepository.save(auditorUser);
 
         // 5. System Funding & Settlement Accounts
         Account fundingAcc = systemAccountService.getOrCreateFundingAccount();

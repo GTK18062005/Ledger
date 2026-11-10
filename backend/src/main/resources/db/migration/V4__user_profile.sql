@@ -9,3 +9,4 @@ UPDATE users SET full_name = 'Alice Vance' WHERE email LIKE '%alice%';
 UPDATE users SET full_name = 'Bob Smith' WHERE email LIKE '%bob%';
 UPDATE users SET full_name = 'Auditor General' WHERE role = 'AUDITOR' AND (full_name IS NULL OR full_name = '');
 UPDATE users SET full_name = 'Administrator' WHERE role = 'ADMIN' AND (full_name IS NULL OR full_name = '');
+

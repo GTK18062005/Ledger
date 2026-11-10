@@ -67,3 +67,4 @@ public class UserProfileResponse {
         return primaryAccountNumber;
     }
 }
+
