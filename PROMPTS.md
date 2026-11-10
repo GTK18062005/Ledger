@@ -326,4 +326,6 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
   - [`FinancialAndSecurityTests.java#testAdminCanAddMoneyToDifferentAccountsAndMaintainDoubleEntryBalance`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/FinancialAndSecurityTests.java)
   - [`FinancialAndSecurityTests.java#testStatementServicePagination`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/FinancialAndSecurityTests.java)
+- **Commit Reference:** [`dfa4a09`](https://github.com/GTK18062005/Ledger/commit/dfa4a09)
+
 
