@@ -365,7 +365,7 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`AccountDashboard.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AccountDashboard.jsx)
   - [`StatementViewer.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/StatementViewer.jsx)
   - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
-- **Commit Reference:** [`489115c`](https://github.com/GTK18062005/Ledger/commit/489115c)
+- **Commit Reference:** [`52d5d73`](https://github.com/GTK18062005/Ledger/commit/52d5d73)
 
 
 
