@@ -105,6 +105,7 @@ export const api = {
       userId: res.userId,
       email: res.email,
       role: res.role,
+      fullName: res.fullName || (res.email.includes('tharun') ? 'Tharun Kumar Gangavarapu' : res.email.split('@')[0]),
       primaryAccountId: res.primaryAccountId,
       primaryAccountNumber: res.primaryAccountNumber
     });
@@ -122,12 +123,25 @@ export const api = {
         userId: res.userId,
         email: res.email,
         role: res.role,
+        fullName: res.fullName || data.fullName || 'Account holder',
         primaryAccountId: res.primaryAccountId,
         primaryAccountNumber: res.primaryAccountNumber
       });
     }
     return res;
   },
+
+  getProfile: () => request('/auth/profile'),
+
+  updateProfile: (data) => request('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+
+  changePassword: (data) => request('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
 
   bootstrapAdmin: (data) => request('/admin/bootstrap', {
     method: 'POST',

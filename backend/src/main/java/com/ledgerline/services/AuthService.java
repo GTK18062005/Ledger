@@ -58,7 +58,11 @@ public class AuthService {
         UUID primaryId = accounts.isEmpty() ? null : accounts.get(0).getId();
         String primaryNum = accounts.isEmpty() ? null : accounts.get(0).getAccountNumber();
 
-        return new AuthResponse(token, user.getId(), user.getEmail(), user.getRole(), primaryId, primaryNum);
+        String displayName = user.getFullName() != null && !user.getFullName().trim().isEmpty()
+                ? user.getFullName()
+                : deriveDefaultName(user.getEmail(), user.getRole().name());
+
+        return new AuthResponse(token, user.getId(), user.getEmail(), user.getRole(), displayName, primaryId, primaryNum);
     }
 
     @Transactional
@@ -68,8 +72,10 @@ public class AuthService {
             throw new InvalidTransactionException("An account with email " + cleanEmail + " is already registered.");
         }
 
+        String displayName = deriveDefaultName(cleanEmail, Role.ACCOUNT_HOLDER.name());
+
         // 1. Create and persist User
-        User user = new User(cleanEmail, passwordEncoder.encode(request.getPassword()), Role.ACCOUNT_HOLDER);
+        User user = new User(cleanEmail, passwordEncoder.encode(request.getPassword()), Role.ACCOUNT_HOLDER, displayName);
         user = userRepository.save(user);
 
         // 2. Automatically onboard primary Account
@@ -88,6 +94,67 @@ public class AuthService {
         auditService.recordAudit(user.getId(), user.getRole().name(), "USER_REGISTERED", user.getEmail(), "SUCCESS",
                 "New user registered and provisioned primary account: " + accountNumber + " (" + currency + ")");
 
-        return new AuthResponse(token, user.getId(), user.getEmail(), user.getRole(), account.getId(), account.getAccountNumber());
+        return new AuthResponse(token, user.getId(), user.getEmail(), user.getRole(), displayName, account.getId(), account.getAccountNumber());
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, com.ledgerline.dto.ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.ledgerline.exceptions.UnauthorizedAccessException("User not found: " + userId));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            auditService.recordAudit(userId, user.getRole().name(), "PASSWORD_CHANGE_FAILED", user.getEmail(), "UNAUTHORIZED", "Current password mismatch");
+            throw new BadCredentialsException("Current password does not match our records.");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 6) {
+            throw new InvalidTransactionException("New password must be at least 6 characters in length.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new InvalidTransactionException("New password cannot be identical to your current password.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword().trim()));
+        userRepository.save(user);
+
+        auditService.recordAudit(userId, user.getRole().name(), "PASSWORD_CHANGE_SUCCESS", user.getEmail(), "SUCCESS", "User successfully changed vault password");
+    }
+
+    @Transactional(readOnly = true)
+    public com.ledgerline.dto.UserProfileResponse getProfile(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.ledgerline.exceptions.UnauthorizedAccessException("User not found: " + userId));
+
+        List<Account> accounts = accountRepository.findByOwner(user);
+        String primaryNum = accounts.isEmpty() ? null : accounts.get(0).getAccountNumber();
+
+        return com.ledgerline.dto.UserProfileResponse.fromEntity(user, primaryNum);
+    }
+
+    @Transactional
+    public com.ledgerline.dto.UserProfileResponse updateProfile(UUID userId, com.ledgerline.dto.UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.ledgerline.exceptions.UnauthorizedAccessException("User not found: " + userId));
+
+        if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
+            user.setFullName(request.getFullName().trim());
+            user = userRepository.save(user);
+            auditService.recordAudit(userId, user.getRole().name(), "PROFILE_UPDATED", user.getEmail(), "SUCCESS", "Updated full name to: " + user.getFullName());
+        }
+
+        List<Account> accounts = accountRepository.findByOwner(user);
+        String primaryNum = accounts.isEmpty() ? null : accounts.get(0).getAccountNumber();
+
+        return com.ledgerline.dto.UserProfileResponse.fromEntity(user, primaryNum);
+    }
+
+    private String deriveDefaultName(String email, String role) {
+        if (email.contains("tharun")) return "Tharun Kumar Gangavarapu";
+        if (email.contains("alice")) return "Alice Vance";
+        if (email.contains("bob")) return "Bob Smith";
+        if ("ADMIN".equals(role)) return "Administrator";
+        if ("AUDITOR".equals(role)) return "Auditor General";
+        return email.split("@")[0];
     }
 }

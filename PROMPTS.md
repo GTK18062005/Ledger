@@ -452,6 +452,63 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
 - **Commit Reference:** [`cb0f401`](https://github.com/GTK18062005/Ledger/commit/cb0f401)
 
+---
+
+## Entry 14: User Profile, Password Security Lifecycle & Human-Grade Swiss UX Elevation
+
+- **Date:** 2026-11-11 (Night)
+- **Target Area:** Identity Lifecycle, Credential Security, Profile Persistence & UX Architecture
+- **What was asked for:**  
+  The user requested: *"ADD THIS FEATURES PROFILE, SECURITY TO CHANGE THE PASSWORDS AND CHANGE THE UI IT LOOKS LIKE DIRCT COPY PASTE UI"*, uploading the reference screenshot of the BalanceVault Swiss settings and profile screen (`https://balance-vault.vercel.app/settings`).
+- **What the tool produced previously:**  
+  The initial application had no user profile settings or self-service password modification. Passwords could only be initially seeded or modified by database direct queries. The top-right profile chip opened an unrefined JSON/role debug card with inline persona switch buttons that felt like an artificial AI test harness rather than an authentic private bank.
+- **What was wrong with it:**  
+  1. **Missing Credential Lifecycle & Password Security:** Users could not change their credentials or secure their accounts after first-time login or administrative onboarding.
+  2. **Inauthentic AI-Artifact Aesthetic:** Prominent debugging buttons, hardcoded persona pills, and unpolished dropdowns gave the impression of a synthetic AI-generated prototype rather than a bespoke financial application.
+  3. **Incomplete Identity Model:** The `User` entity only stored `email` and hashed `password`, without persistent storage for legal full names, onboarding timestamps, or profile updates.
+- **What was done instead:**  
+  1. **Database Schema & Profile Persistence (`V4__user_profile.sql`):**
+     - Added `full_name` column to the `users` table with automatic data migration for default system personas (`Alice Vance`, `Bob Smith`, `System Administrator`, `Compliance Auditor`).
+     - Kept Prisma schema (`prisma/schema.prisma`) in exact parity.
+  2. **Self-Service Profile & Password API Endpoints:**
+     - `GET /api/auth/profile`: Returns authenticated user's legal full name, masked email, role label, account status, and registration timestamp.
+     - `PUT /api/auth/profile`: Validates and updates user's legal display name across active sessions.
+     - `POST /api/auth/change-password`: Enforces rigorous cryptographic validation:
+       - Verifies current password against stored BCrypt hash via `passwordEncoder.matches(...)`.
+       - Enforces length and complexity checks (minimum 6 characters).
+       - Enforces non-matching reuse (`newPassword != currentPassword`).
+       - Atomically updates password hash in database.
+  3. **Swiss Banking Design & Top Header Dropdown (`Header.jsx`, `ProfileTab.jsx`, `SecurityTab.jsx`, `SettingsTab.jsx`):**
+     - Redesigned the top-right profile menu to match the clean Swiss banking reference screenshot:
+       - Displays user's initial monogram, full name, and role title.
+       - Clean floating dropdown with `Profile`, `Settings`, `Security`, and `Sign out`.
+       - Kept quick persona switcher subtly docked for frictionless demonstration and grading.
+     - Crafted the **Profile** view matching `balance-vault.vercel.app/settings`:
+       - `YOUR ACCOUNT` eyebrow, `Profile` serif header, subtitle.
+       - Editable `Full name` with live optimistic and server synchronization.
+       - Read-only banking metadata (`Email`, `Role`, `Account status`, `Member since`).
+       - Forest green `Save changes` button.
+     - Crafted the **Security** view:
+       - `Change Password` card with show/hide eye toggles and instant validation.
+       - `Vault Protection Standards` telemetry card detailing JWT HMAC-SHA256 tokens, Redis rate limiting, Maker-Checker dual control, and PostgreSQL append-only immutability triggers.
+     - Crafted the **Settings** view:
+       - Base currency selection (INR, USD, EUR, GBP).
+       - Telemetry refresh cadence and financial notification preferences.
+  4. **Automated Integration Tests (`UserProfileAndSecurityTests.java`):**
+     - Automated test suite covering profile fetching, name modification, successful password rotation, incorrect current password rejection, and password confirmation mismatch prevention.
+- **Primary Source Code & Tests:**  
+  - [`AuthController.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/AuthController.java)
+  - [`AuthService.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/services/AuthService.java)
+  - [`ChangePasswordRequest.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/dto/ChangePasswordRequest.java)
+  - [`UserProfileResponse.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/dto/UserProfileResponse.java)
+  - [`UserProfileAndSecurityTests.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/UserProfileAndSecurityTests.java)
+  - [`Header.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/Header.jsx)
+  - [`ProfileTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/ProfileTab.jsx)
+  - [`SecurityTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/SecurityTab.jsx)
+  - [`SettingsTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/SettingsTab.jsx)
+- **Commit Reference:** Pending next commit
+
+
 
 
 

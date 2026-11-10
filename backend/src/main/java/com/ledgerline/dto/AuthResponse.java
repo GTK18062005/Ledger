@@ -9,6 +9,7 @@ public class AuthResponse {
     private UUID userId;
     private String email;
     private Role role;
+    private String fullName;
     private UUID primaryAccountId;
     private String primaryAccountNumber;
 
@@ -29,6 +30,17 @@ public class AuthResponse {
         this.userId = userId;
         this.email = email;
         this.role = role;
+        this.primaryAccountId = primaryAccountId;
+        this.primaryAccountNumber = primaryAccountNumber;
+    }
+
+    public AuthResponse(String token, UUID userId, String email, Role role, String fullName, UUID primaryAccountId, String primaryAccountNumber) {
+        this.token = token;
+        this.tokenType = "Bearer";
+        this.userId = userId;
+        this.email = email;
+        this.role = role;
+        this.fullName = fullName;
         this.primaryAccountId = primaryAccountId;
         this.primaryAccountNumber = primaryAccountNumber;
     }
@@ -71,6 +83,14 @@ public class AuthResponse {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public UUID getPrimaryAccountId() {

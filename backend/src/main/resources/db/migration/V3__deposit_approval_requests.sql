@@ -21,3 +21,4 @@ CREATE INDEX IF NOT EXISTS idx_dep_approval_status ON deposit_approval_requests(
 CREATE INDEX IF NOT EXISTS idx_dep_approval_user ON deposit_approval_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_dep_approval_account ON deposit_approval_requests(account_id);
 CREATE INDEX IF NOT EXISTS idx_dep_approval_created ON deposit_approval_requests(created_at);
+

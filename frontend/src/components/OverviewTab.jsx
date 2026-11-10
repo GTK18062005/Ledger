@@ -12,11 +12,13 @@ export default function OverviewTab({
 }) {
   const getFirstName = () => {
     if (!user) return 'there';
+    if (user.fullName) return user.fullName.split(' ')[0];
+    if (user.name) return user.name.split(' ')[0];
     if (user.email === 'alice@ledgerline.io') return 'Alice';
     if (user.email === 'bob@ledgerline.io') return 'Bob';
     if (user.email === 'admin@ledgerline.io') return 'Administrator';
     if (user.email === 'auditor@ledgerline.io') return 'Auditor';
-    if (user.name) return user.name.split(' ')[0];
+    if (user.email?.toLowerCase().includes('tharun')) return 'Tharun';
     const prefix = user.email.split('@')[0];
     return prefix.charAt(0).toUpperCase() + prefix.slice(1);
   };

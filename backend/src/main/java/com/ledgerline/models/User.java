@@ -22,6 +22,9 @@ public class User {
     @Column(nullable = false, length = 32)
     private Role role;
 
+    @Column(name = "full_name", length = 255)
+    private String fullName;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -32,6 +35,14 @@ public class User {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public User(String email, String passwordHash, Role role, String fullName) {
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.fullName = fullName;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -72,6 +83,14 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public LocalDateTime getCreatedAt() {

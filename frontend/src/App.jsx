@@ -6,6 +6,9 @@ import AccountDashboard from './components/AccountDashboard';
 import StatementViewer from './components/StatementViewer';
 import AccountRequestTab from './components/AccountRequestTab';
 import AdminAuditorPanel from './components/AdminAuditorPanel';
+import ProfileTab from './components/ProfileTab';
+import SecurityTab from './components/SecurityTab';
+import SettingsTab from './components/SettingsTab';
 import DepositModal from './components/DepositModal';
 import WithdrawModal from './components/WithdrawModal';
 import TransferModal from './components/TransferModal';
@@ -58,6 +61,7 @@ export default function App() {
       const newUser = {
         userId: res.userId,
         email: res.email,
+        fullName: res.fullName,
         role: res.role,
         primaryAccountId: res.primaryAccountId,
         primaryAccountNumber: res.primaryAccountNumber
@@ -181,6 +185,7 @@ export default function App() {
           activeTab={activeTab}
           onLogout={handleLogout}
           onSelectUser={handleLogin}
+          onNavigateTab={setActiveTab}
         />
 
         {/* View Content Area */}
@@ -235,6 +240,26 @@ export default function App() {
                 accounts={accounts}
                 onRefreshAccounts={loadAccounts}
               />
+            )}
+
+            {activeTab === 'profile' && (
+              <ProfileTab
+                user={user}
+                onUserUpdated={(updatedUser) => {
+                  setUser((prev) => ({
+                    ...prev,
+                    fullName: updatedUser.fullName
+                  }));
+                }}
+              />
+            )}
+
+            {activeTab === 'security' && (
+              <SecurityTab user={user} />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsTab user={user} />
             )}
           </div>
         </main>

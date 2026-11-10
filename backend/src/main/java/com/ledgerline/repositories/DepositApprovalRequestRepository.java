@@ -21,3 +21,4 @@ public interface DepositApprovalRequestRepository extends JpaRepository<DepositA
 
     long countByStatus(DepositApprovalStatus status);
 }
+
