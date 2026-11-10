@@ -60,18 +60,33 @@ public class DepositService {
         Account fundingAccount = systemAccountService.getOrCreateFundingAccount();
         UUID fundingId = fundingAccount.getId();
         UUID targetId = request.getAccountId();
+        if (targetId == null && request.getAccountIdentifier() != null) {
+            String query = request.getAccountIdentifier().trim();
+            try {
+                targetId = UUID.fromString(query);
+            } catch (IllegalArgumentException e) {
+                Account target = accountRepository.findByAccountNumber(query)
+                        .orElseThrow(() -> new AccountNotFoundException("Target account not found: " + query));
+                targetId = target.getId();
+            }
+        }
+        if (targetId == null) {
+            throw new InvalidTransactionException("Target account ID or Account Number is required.");
+        }
+
+        final UUID finalTargetId = targetId;
 
         // Deterministic lock acquisition to prevent deadlocks and ensure fresh entity state
         Account lockedFunding;
         Account lockedTarget;
-        if (fundingId.compareTo(targetId) < 0) {
+        if (fundingId.compareTo(finalTargetId) < 0) {
             lockedFunding = accountRepository.findByIdWithLock(fundingId)
                     .orElseThrow(() -> new AccountNotFoundException("Funding account not found: " + fundingId));
-            lockedTarget = accountRepository.findByIdWithLock(targetId)
-                    .orElseThrow(() -> new AccountNotFoundException("Target account not found: " + targetId));
+            lockedTarget = accountRepository.findByIdWithLock(finalTargetId)
+                    .orElseThrow(() -> new AccountNotFoundException("Target account not found: " + finalTargetId));
         } else {
-            lockedTarget = accountRepository.findByIdWithLock(targetId)
-                    .orElseThrow(() -> new AccountNotFoundException("Target account not found: " + targetId));
+            lockedTarget = accountRepository.findByIdWithLock(finalTargetId)
+                    .orElseThrow(() -> new AccountNotFoundException("Target account not found: " + finalTargetId));
             lockedFunding = accountRepository.findByIdWithLock(fundingId)
                     .orElseThrow(() -> new AccountNotFoundException("Funding account not found: " + fundingId));
         }

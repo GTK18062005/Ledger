@@ -432,4 +432,56 @@ public class FinancialAndSecurityTests {
                 transferController.transfer(crashKey, alteredReq, auth),
                 "Altered payload with same key must still be rejected with 409 Conflict");
     }
+
+    @Test
+    @DisplayName("P2P-1. Person-to-person transfer resolves destination by Account Number or UUID without dropdown")
+    public void testPersonToPersonTransferUsingAccountIdOrNumber() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Account alice = accountRepository.save(new Account("ACC-P2P-A-" + suffix, customerUser, new BigDecimal("1000.00"), "INR"));
+        Account bob = accountRepository.save(new Account("ACC-P2P-B-" + suffix, adminUser, new BigDecimal("200.00"), "INR"));
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                customerUser.getId(), null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ACCOUNT_HOLDER"))
+        );
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+
+        // 1. Send ₹150 using Bob's Account Number string ("ACC-P2P-B-...")
+        TransferRequest reqByNum = new TransferRequest();
+        reqByNum.setSourceAccountInput(alice.getId().toString());
+        reqByNum.setDestinationAccount(bob.getAccountNumber());
+        reqByNum.setAmount(new BigDecimal("150.00"));
+        reqByNum.setDescription("P2P transfer by account number");
+
+        ResponseEntity<TransactionResponse> res1 = transferController.transfer(
+                "P2P-KEY-1-" + suffix, reqByNum, auth
+        );
+
+        assertNotNull(res1.getBody());
+        assertEquals(TransactionStatus.COMPLETED, res1.getBody().getStatus());
+        assertEquals(0, new BigDecimal("150.00").compareTo(res1.getBody().getAmount()));
+
+        Account aliceAfter1 = accountRepository.findById(alice.getId()).orElseThrow();
+        Account bobAfter1 = accountRepository.findById(bob.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("850.00").compareTo(aliceAfter1.getBalance()));
+        assertEquals(0, new BigDecimal("350.00").compareTo(bobAfter1.getBalance()));
+
+        // 2. Send ₹50 using Bob's Account UUID string
+        TransferRequest reqByUuid = new TransferRequest();
+        reqByUuid.setSourceAccountId(alice.getId());
+        reqByUuid.setDestinationAccountInput(bob.getId().toString());
+        reqByUuid.setAmount(new BigDecimal("50.00"));
+        reqByUuid.setDescription("P2P transfer by UUID");
+
+        ResponseEntity<TransactionResponse> res2 = transferController.transfer(
+                "P2P-KEY-2-" + suffix, reqByUuid, auth
+        );
+
+        assertNotNull(res2.getBody());
+        assertEquals(TransactionStatus.COMPLETED, res2.getBody().getStatus());
+
+        Account aliceAfter2 = accountRepository.findById(alice.getId()).orElseThrow();
+        Account bobAfter2 = accountRepository.findById(bob.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("800.00").compareTo(aliceAfter2.getBalance()));
+        assertEquals(0, new BigDecimal("400.00").compareTo(bobAfter2.getBalance()));
+    }
 }

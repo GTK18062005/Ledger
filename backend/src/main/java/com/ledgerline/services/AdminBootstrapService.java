@@ -81,3 +81,4 @@ public class AdminBootstrapService {
         return new AuthResponse(token, adminUser.getId(), adminUser.getEmail(), adminUser.getRole());
     }
 }
+

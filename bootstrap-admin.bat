@@ -42,3 +42,4 @@ powershell -Command ^
 
 echo.
 pause
+

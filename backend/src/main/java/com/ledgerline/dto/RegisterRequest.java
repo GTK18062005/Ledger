@@ -71,3 +71,4 @@ public class RegisterRequest {
         this.initialCurrency = initialCurrency;
     }
 }
+

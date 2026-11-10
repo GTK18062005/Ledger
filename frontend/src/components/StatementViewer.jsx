@@ -25,7 +25,7 @@ export default function StatementViewer({
 
   const formatBalance = (val, currency = 'INR') => {
     const num = parseFloat(val) || 0;
-    return `${num.toLocaleString('en-IN', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ${currency}`;
+    return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   };
 
   return (

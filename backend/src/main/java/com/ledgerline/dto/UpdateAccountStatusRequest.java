@@ -36,3 +36,4 @@ public class UpdateAccountStatusRequest {
         this.adminReason = adminReason;
     }
 }
+

@@ -15,7 +15,7 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [statement, setStatement] = useState([]);
-  const [activeTab, setActiveTab] = useState('accounts'); // 'accounts', 'transfer', 'statement', 'audit'
+  const [activeTab, setActiveTab] = useState('transfer'); // default directly to easy P2P Transfer!
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -164,19 +164,7 @@ export default function App() {
         />
 
         {/* Primary View Navigation */}
-        <div className="border-b border-obsidian-750 flex space-x-6">
-          <button
-            onClick={() => setActiveTab('accounts')}
-            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
-              activeTab === 'accounts'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Wallet className="w-4 h-4" />
-            <span>Vault Accounts ({accounts.length})</span>
-          </button>
-
+        <div className="border-b border-obsidian-750 flex space-x-4 sm:space-x-6">
           <button
             onClick={() => setActiveTab('transfer')}
             className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
@@ -186,7 +174,19 @@ export default function App() {
             }`}
           >
             <ArrowRightLeft className="w-4 h-4" />
-            <span>Financial Mutations</span>
+            <span>Send Money (P2P)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('accounts')}
+            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
+              activeTab === 'accounts'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Wallet className="w-4 h-4" />
+            <span>My Accounts ({accounts.length})</span>
           </button>
 
           <button
@@ -201,7 +201,7 @@ export default function App() {
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Ledger Statements</span>
+            <span>Statements & History</span>
           </button>
 
           {isAdminOrAuditor && (
@@ -214,7 +214,7 @@ export default function App() {
               }`}
             >
               <ShieldAlert className="w-4 h-4" />
-              <span>Compliance & Audit Invariant</span>
+              <span>Admin & Audit</span>
             </button>
           )}
         </div>

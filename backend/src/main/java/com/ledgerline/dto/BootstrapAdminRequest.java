@@ -49,3 +49,4 @@ public class BootstrapAdminRequest {
         this.bootstrapSecret = bootstrapSecret;
     }
 }
+

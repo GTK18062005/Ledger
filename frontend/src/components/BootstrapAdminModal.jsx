@@ -198,3 +198,4 @@ export default function BootstrapAdminModal({ isOpen, onClose, onSuccess }) {
     </div>
   );
 }
+

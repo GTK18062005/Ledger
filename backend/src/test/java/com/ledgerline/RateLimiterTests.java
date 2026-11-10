@@ -70,3 +70,4 @@ public class RateLimiterTests {
         assertTrue(rateLimiterService.tryAcquire("AUTH", clientA, limit).isAllowed());
     }
 }
+

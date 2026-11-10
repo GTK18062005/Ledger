@@ -60,16 +60,30 @@ public class WithdrawalService {
 
                 Account settlementAccount = systemAccountService.getOrCreateSettlementAccount();
                 UUID sourceId = request.getAccountId();
+                if (sourceId == null && request.getAccountIdentifier() != null) {
+                        String query = request.getAccountIdentifier().trim();
+                        try {
+                                sourceId = UUID.fromString(query);
+                        } catch (IllegalArgumentException e) {
+                                Account source = accountRepository.findByAccountNumber(query)
+                                                .orElseThrow(() -> new AccountNotFoundException("Source account not found with account number: " + query));
+                                sourceId = source.getId();
+                        }
+                }
+                if (sourceId == null) {
+                        throw new InvalidTransactionException("Source account ID or Account Number is required.");
+                }
+                final UUID finalSourceId = sourceId;
                 UUID settlementId = settlementAccount.getId();
 
                 // Deterministic lock acquisition to prevent deadlocks and guarantee fresh
                 // balance state
                 Account lockedSource;
                 Account lockedSettlement;
-                if (sourceId.compareTo(settlementId) < 0) {
-                        lockedSource = accountRepository.findByIdWithLock(sourceId)
+                if (finalSourceId.compareTo(settlementId) < 0) {
+                        lockedSource = accountRepository.findByIdWithLock(finalSourceId)
                                         .orElseThrow(() -> new AccountNotFoundException(
-                                                        "Account not found: " + sourceId));
+                                                        "Account not found: " + finalSourceId));
                         lockedSettlement = accountRepository.findByIdWithLock(settlementId)
                                         .orElseThrow(() -> new AccountNotFoundException(
                                                         "Settlement account not found: " + settlementId));
@@ -77,9 +91,9 @@ public class WithdrawalService {
                         lockedSettlement = accountRepository.findByIdWithLock(settlementId)
                                         .orElseThrow(() -> new AccountNotFoundException(
                                                         "Settlement account not found: " + settlementId));
-                        lockedSource = accountRepository.findByIdWithLock(sourceId)
+                        lockedSource = accountRepository.findByIdWithLock(finalSourceId)
                                         .orElseThrow(() -> new AccountNotFoundException(
-                                                        "Account not found: " + sourceId));
+                                                        "Account not found: " + finalSourceId));
                 }
 
                 // Guard: Source account must not be a system account

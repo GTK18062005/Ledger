@@ -49,3 +49,4 @@ public class LedgerIntegrityHealthIndicator implements HealthIndicator {
         }
     }
 }
+

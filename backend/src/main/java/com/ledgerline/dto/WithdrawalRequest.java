@@ -1,14 +1,18 @@
 package com.ledgerline.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
 public class WithdrawalRequest {
 
-    @NotNull(message = "Account ID is required")
     private UUID accountId;
+    private String accountIdentifier;
 
     @NotNull(message = "Withdrawal amount is required")
     @DecimalMin(value = "0.01", message = "Withdrawal amount must be greater than zero")
@@ -25,12 +29,47 @@ public class WithdrawalRequest {
         this.description = description;
     }
 
+    public WithdrawalRequest(String accountIdentifier, BigDecimal amount, String description) {
+        setAccountInput(accountIdentifier);
+        this.amount = amount;
+        this.description = description;
+    }
+
+    @AssertTrue(message = "Account ID or Account Number is required")
+    public boolean isValidAccount() {
+        return accountId != null || (accountIdentifier != null && !accountIdentifier.trim().isEmpty());
+    }
+
     public UUID getAccountId() {
         return accountId;
     }
 
     public void setAccountId(UUID accountId) {
         this.accountId = accountId;
+    }
+
+    @JsonSetter("accountId")
+    public void setAccountInput(Object val) {
+        if (val == null) return;
+        if (val instanceof UUID) {
+            this.accountId = (UUID) val;
+            return;
+        }
+        String s = val.toString().trim();
+        if (s.isEmpty()) return;
+        try {
+            this.accountId = UUID.fromString(s);
+        } catch (IllegalArgumentException e) {
+            this.accountIdentifier = s;
+        }
+    }
+
+    public String getAccountIdentifier() {
+        return accountIdentifier;
+    }
+
+    public void setAccountIdentifier(String accountIdentifier) {
+        this.accountIdentifier = accountIdentifier;
     }
 
     public BigDecimal getAmount() {
@@ -49,4 +88,3 @@ public class WithdrawalRequest {
         this.description = description;
     }
 }
-

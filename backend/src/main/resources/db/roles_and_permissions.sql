@@ -63,3 +63,4 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM bala
 -- FROM information_schema.role_table_grants 
 -- WHERE grantee IN ('balancevault_app', 'balancevault_auditor')
 -- ORDER BY table_name, privilege_type;
+

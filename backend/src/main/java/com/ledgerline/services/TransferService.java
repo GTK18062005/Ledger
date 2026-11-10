@@ -49,46 +49,74 @@ public class TransferService {
      */
     @Transactional
     public TransactionResponse transfer(TransferRequest request, String idempotencyKey, UUID initiatorId) {
-        if (request.getSourceAccountId().equals(request.getDestinationAccountId())) {
-            throw new InvalidTransactionException("Source and destination accounts must be different.");
-        }
-
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidTransactionException("Transfer amount must be strictly greater than zero.");
         }
 
+        UUID sourceId = request.getSourceAccountId();
+        if (sourceId == null && request.getSourceAccountIdentifier() != null) {
+            String s = request.getSourceAccountIdentifier().trim();
+            try {
+                sourceId = UUID.fromString(s);
+            } catch (IllegalArgumentException e) {
+                Account acc = accountRepository.findByAccountNumber(s)
+                        .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + s));
+                sourceId = acc.getId();
+            }
+        }
+
+        UUID destId = request.getDestinationAccountId();
+        if (destId == null && request.getDestinationAccountIdentifier() != null) {
+            String d = request.getDestinationAccountIdentifier().trim();
+            try {
+                destId = UUID.fromString(d);
+            } catch (IllegalArgumentException e) {
+                Account acc = accountRepository.findByAccountNumber(d)
+                        .orElseThrow(() -> new AccountNotFoundException("Destination account not found: " + d));
+                destId = acc.getId();
+            }
+        }
+
+        if (sourceId == null || destId == null) {
+            throw new InvalidTransactionException("Source and destination accounts must be specified.");
+        }
+
+        if (sourceId.equals(destId)) {
+            throw new InvalidTransactionException("Source and destination accounts must be different.");
+        }
+
+        final UUID finalSourceId = sourceId;
+        final UUID finalDestId = destId;
+
         User initiator = userRepository.findById(initiatorId)
                 .orElseThrow(() -> new UnauthorizedAccessException("Initiator user not found"));
-
-        UUID sourceId = request.getSourceAccountId();
-        UUID destId = request.getDestinationAccountId();
 
         // Deterministic Lock Ordering: sort UUIDs lexicographically to eliminate deadlocks
         Account sourceAccount;
         Account destAccount;
 
-        if (sourceId.compareTo(destId) < 0) {
-            sourceAccount = accountRepository.findByIdWithLock(sourceId)
-                    .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + sourceId));
-            destAccount = accountRepository.findByIdWithLock(destId)
-                    .orElseThrow(() -> new AccountNotFoundException("Destination account not found: " + destId));
+        if (finalSourceId.compareTo(finalDestId) < 0) {
+            sourceAccount = accountRepository.findByIdWithLock(finalSourceId)
+                    .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + finalSourceId));
+            destAccount = accountRepository.findByIdWithLock(finalDestId)
+                    .orElseThrow(() -> new AccountNotFoundException("Destination account not found: " + finalDestId));
         } else {
-            destAccount = accountRepository.findByIdWithLock(destId)
-                    .orElseThrow(() -> new AccountNotFoundException("Destination account not found: " + destId));
-            sourceAccount = accountRepository.findByIdWithLock(sourceId)
-                    .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + sourceId));
+            destAccount = accountRepository.findByIdWithLock(finalDestId)
+                    .orElseThrow(() -> new AccountNotFoundException("Destination account not found: " + finalDestId));
+            sourceAccount = accountRepository.findByIdWithLock(finalSourceId)
+                    .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + finalSourceId));
         }
 
         // Guard: System accounts cannot be used as source or destination by API callers
         if (sourceAccount.isSystem()) {
-            auditService.recordRefusal(initiatorId, initiator.getRole().name(), sourceId,
+            auditService.recordRefusal(initiatorId, initiator.getRole().name(), finalSourceId,
                     "TRANSFER", sourceAccount.getAccountNumber() + " -> " + destAccount.getAccountNumber(),
                     request.getAmount(), "SYSTEM_ACCOUNT_ACCESS",
                     idempotencyKey, "Caller attempted to transfer FROM a system clearing account");
             throw new UnauthorizedAccessException("Access denied: System accounts cannot be used as a transfer source.");
         }
         if (destAccount.isSystem()) {
-            auditService.recordRefusal(initiatorId, initiator.getRole().name(), destId,
+            auditService.recordRefusal(initiatorId, initiator.getRole().name(), finalDestId,
                     "TRANSFER", sourceAccount.getAccountNumber() + " -> " + destAccount.getAccountNumber(),
                     request.getAmount(), "SYSTEM_ACCOUNT_ACCESS",
                     idempotencyKey, "Caller attempted to transfer INTO a system clearing account");
@@ -97,7 +125,7 @@ public class TransferService {
 
         // Guard: Account status must be ACTIVE for financial operations
         if (sourceAccount.getStatus() != AccountStatus.ACTIVE) {
-            auditService.recordRefusal(initiatorId, initiator.getRole().name(), sourceId,
+            auditService.recordRefusal(initiatorId, initiator.getRole().name(), finalSourceId,
                     "TRANSFER", sourceAccount.getAccountNumber() + " -> " + destAccount.getAccountNumber(),
                     request.getAmount(), "ACCOUNT_NOT_ACTIVE",
                     idempotencyKey, "Source account status is " + sourceAccount.getStatus() + "; transfers are blocked");
