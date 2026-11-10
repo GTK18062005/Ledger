@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-obsidian-900 text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300;
+    @apply bg-[#f7f9f6] text-[#122a1f] font-sans selection:bg-[#133e2b]/15 selection:text-[#133e2b];
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -14,18 +14,18 @@
   }
 }
 
-/* Custom scrollbar for dense ledger tables */
+/* Custom Swiss banking scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #080D1A;
+  background: #f0f4ee;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E2B47;
+  background: #cbd8c7;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #9ab495;
 }

@@ -4,29 +4,47 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'Menlo', 'monospace'],
       },
       colors: {
-        obsidian: {
-          950: '#060913',
-          900: '#080D1A',
-          850: '#0D1424',
-          800: '#131B2E',
-          750: '#18223A',
-          700: '#1E2B47',
+        forest: {
+          950: '#0a2217',
+          900: '#0e3020', // Swiss banking sidebar background
+          850: '#133e2b',
+          800: '#174933',
+          750: '#1b553c',
+          700: '#206346',
+          600: '#297c58',
+          500: '#349b6f',
         },
-        vault: {
-          emerald: '#10B981',
-          teal: '#14B8A6',
-          cyan: '#06B6D4',
-          amber: '#F59E0B',
-          rose: '#F43F5E',
-          slate: '#64748B',
+        sage: {
+          50: '#f8faf7',
+          100: '#eaf2e8', // Banner background from screenshot
+          200: '#d7e6d4',
+          300: '#bdd5ba',
+          700: '#40604b',
+          800: '#2d4736',
+          900: '#1d3124',
+        },
+        cream: {
+          50: '#ffffff',
+          100: '#f7f9f6', // Main background from screenshot
+          200: '#f5f2ea', // Quick action card background from screenshot
+          300: '#eae4d5',
+        },
+        // Backwards compatibility for existing utility classes
+        obsidian: {
+          950: '#0e3020',
+          900: '#133e2b',
+          850: '#ffffff',
+          800: '#f7f9f6',
+          750: '#e5ede3',
+          700: '#d3e0cf',
         }
       }
     },

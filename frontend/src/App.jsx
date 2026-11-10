@@ -1,27 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import LoginPage from './components/LoginPage';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import OverviewTab from './components/OverviewTab';
 import AccountDashboard from './components/AccountDashboard';
-import TransferForm from './components/TransferForm';
 import StatementViewer from './components/StatementViewer';
+import AccountRequestTab from './components/AccountRequestTab';
 import AdminAuditorPanel from './components/AdminAuditorPanel';
+import DepositModal from './components/DepositModal';
+import WithdrawModal from './components/WithdrawModal';
+import TransferModal from './components/TransferModal';
 import OnboardingModal from './components/OnboardingModal';
 import BootstrapAdminModal from './components/BootstrapAdminModal';
+import LoginPage from './components/LoginPage';
 import { api, getStoredUser, clearAuth } from './api';
-import { Wallet, ArrowRightLeft, FileText, ShieldAlert, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [statement, setStatement] = useState([]);
-  const [activeTab, setActiveTab] = useState('transfer'); // default to P2P Transfer
+  const [activeTab, setActiveTab] = useState('overview'); // Default to Overview (Image 1 / 3)
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [statementLoading, setStatementLoading] = useState(false);
 
-  // Modals
+  // Modal Dialog states
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [showOnboardModal, setShowOnboardModal] = useState(false);
   const [showBootstrapModal, setShowBootstrapModal] = useState(false);
 
@@ -70,6 +78,7 @@ export default function App() {
     setAccounts([]);
     setSelectedAccount(null);
     setStatement([]);
+    setActiveTab('overview');
   };
 
   const loadAccounts = async () => {
@@ -104,13 +113,8 @@ export default function App() {
 
   const handleSelectAccountForStatement = (acc) => {
     setSelectedAccount(acc);
-    setActiveTab('statement');
+    setActiveTab('statements');
     loadStatement(acc.id);
-  };
-
-  const handleSelectAccountForTransfer = (acc) => {
-    setSelectedAccount(acc);
-    setActiveTab('transfer');
   };
 
   const handleCreateAccount = async (payload) => {
@@ -118,30 +122,18 @@ export default function App() {
     await loadAccounts();
   };
 
-  const handleExecuteTransfer = async (payload, idempotencyKey) => {
-    return await api.transfer(payload, idempotencyKey);
-  };
-
-  const handleExecuteDeposit = async (payload, idempotencyKey) => {
-    return await api.deposit(payload, idempotencyKey);
-  };
-
-  const handleExecuteWithdraw = async (payload, idempotencyKey) => {
-    return await api.withdraw(payload, idempotencyKey);
-  };
-
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#f7f9f6]">
         <div className="text-center space-y-3 font-mono">
-          <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mx-auto" />
-          <p className="text-xs text-slate-400">Verifying Zero-Sum Invariant & Connecting to Vault...</p>
+          <Loader2 className="w-8 h-8 text-[#133e2b] animate-spin mx-auto" />
+          <p className="text-xs text-[#52705e]">Connecting to BalanceVault Swiss Depository...</p>
         </div>
       </div>
     );
   }
 
-  // IF USER IS NOT LOGGED IN: SHOW DEDICATED LOGIN PAGE
+  // IF USER IS NOT LOGGED IN: SHOW SWISS LOGIN PAGE
   if (!user) {
     return (
       <>
@@ -152,7 +144,6 @@ export default function App() {
           onOpenBootstrapModal={() => setShowBootstrapModal(true)}
         />
 
-        {/* Onboarding Dialog */}
         <OnboardingModal
           isOpen={showOnboardModal}
           onClose={() => setShowOnboardModal(false)}
@@ -164,160 +155,131 @@ export default function App() {
           }}
         />
 
-        {/* First Admin Bootstrap Dialog */}
         <BootstrapAdminModal
           isOpen={showBootstrapModal}
           onClose={() => setShowBootstrapModal(false)}
-          onSuccess={async (adminUser) => {
-            setShowBootstrapModal(false);
-            if (adminUser && adminUser.email) {
-              await handleLogin(adminUser.email, 'AdminSecret123!');
-            }
-          }}
         />
       </>
     );
   }
 
-  // IF USER IS LOGGED IN: SHOW DASHBOARD
-  const isAdminOrAuditor = user && (user.role === 'ADMIN' || user.role === 'AUDITOR');
-
   return (
-    <div className="min-h-screen bg-obsidian-950 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
-      <Navbar
+    <div className="min-h-screen bg-[#f7f9f6] flex flex-row font-sans selection:bg-[#133e2b]/15 selection:text-[#133e2b]">
+      {/* 1. Left Swiss Forest Sidebar (Fixed) */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
         user={user}
         onLogout={handleLogout}
-        onOpenOnboardModal={() => setShowOnboardModal(true)}
-        onOpenBootstrapModal={() => setShowBootstrapModal(true)}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-6">
-        {/* Primary View Navigation */}
-        <div className="border-b border-obsidian-750 flex space-x-4 sm:space-x-6">
-          <button
-            onClick={() => setActiveTab('transfer')}
-            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
-              activeTab === 'transfer'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            <span>Send Money (P2P)</span>
-          </button>
+      {/* 2. Main Workspace Layout */}
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        {/* Top Header */}
+        <Header
+          user={user}
+          activeTab={activeTab}
+          onLogout={handleLogout}
+          onSelectUser={handleLogin}
+        />
 
-          <button
-            onClick={() => setActiveTab('accounts')}
-            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
-              activeTab === 'accounts'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Wallet className="w-4 h-4" />
-            <span>My Accounts ({accounts.length})</span>
-          </button>
+        {/* View Content Area */}
+        <main className="flex-1 px-6 sm:px-10 lg:px-12 py-8 overflow-y-auto">
+          <div className="max-w-6xl mx-auto w-full">
+            {activeTab === 'overview' && (
+              <OverviewTab
+                user={user}
+                accounts={accounts}
+                onNavigateTab={setActiveTab}
+                onSelectAccountForStatement={handleSelectAccountForStatement}
+                onOpenDeposit={() => setShowDepositModal(true)}
+                onOpenWithdraw={() => setShowWithdrawModal(true)}
+                onOpenTransfer={() => setShowTransferModal(true)}
+              />
+            )}
 
-          <button
-            onClick={() => {
-              setActiveTab('statement');
-              if (selectedAccount) loadStatement(selectedAccount.id);
-            }}
-            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
-              activeTab === 'statement'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Statements & History</span>
-          </button>
+            {activeTab === 'accounts' && (
+              <AccountDashboard
+                accounts={accounts}
+                user={user}
+                onSelectAccountForStatement={handleSelectAccountForStatement}
+                onSelectAccountForTransfer={() => setShowTransferModal(true)}
+                onCreateAccount={handleCreateAccount}
+                onRefresh={loadAccounts}
+                loading={loading}
+              />
+            )}
 
-          {isAdminOrAuditor && (
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
-                activeTab === 'audit'
-                  ? 'border-purple-400 text-purple-300'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <ShieldAlert className="w-4 h-4" />
-              <span>Admin & Audit</span>
-            </button>
-          )}
-        </div>
+            {activeTab === 'statements' && (
+              <StatementViewer
+                selectedAccount={selectedAccount}
+                accounts={accounts}
+                onSelectAccount={setSelectedAccount}
+                onLoadStatement={loadStatement}
+                statement={statement}
+                loading={statementLoading}
+              />
+            )}
 
-        {/* Tab Content */}
-        {activeTab === 'accounts' && (
-          <AccountDashboard
-            accounts={accounts}
-            user={user}
-            onSelectAccountForStatement={handleSelectAccountForStatement}
-            onSelectAccountForTransfer={handleSelectAccountForTransfer}
-            onCreateAccount={handleCreateAccount}
-            onRefresh={loadAccounts}
-            loading={loading}
-          />
-        )}
+            {activeTab === 'account-request' && (
+              <AccountRequestTab
+                user={user}
+                accounts={accounts}
+                onRefreshAccounts={loadAccounts}
+              />
+            )}
 
-        {activeTab === 'transfer' && (
-          <TransferForm
-            accounts={accounts}
-            user={user}
-            onExecuteTransfer={handleExecuteTransfer}
-            onExecuteDeposit={handleExecuteDeposit}
-            onExecuteWithdraw={handleExecuteWithdraw}
-            onRefreshAccounts={loadAccounts}
-          />
-        )}
+            {activeTab === 'admin-audit' && (
+              <AdminAuditorPanel
+                user={user}
+                accounts={accounts}
+                onRefreshAccounts={loadAccounts}
+              />
+            )}
+          </div>
+        </main>
+      </div>
 
-        {activeTab === 'statement' && (
-          <StatementViewer
-            selectedAccount={selectedAccount}
-            accounts={accounts}
-            onSelectAccount={(acc) => {
-              setSelectedAccount(acc);
-              loadStatement(acc.id);
-            }}
-            onLoadStatement={loadStatement}
-            statement={statement}
-            loading={statementLoading}
-          />
-        )}
+      {/* Modals for Quick Actions */}
+      <DepositModal
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        accounts={accounts}
+        user={user}
+        onRefresh={loadAccounts}
+      />
 
-        {activeTab === 'audit' && isAdminOrAuditor && (
-          <AdminAuditorPanel
-            user={user}
-            accounts={accounts}
-            onRefreshAccounts={loadAccounts}
-          />
-        )}
-      </main>
+      <WithdrawModal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        accounts={accounts}
+        user={user}
+        onRefresh={loadAccounts}
+      />
 
-      {/* Onboarding Dialog */}
+      <TransferModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        accounts={accounts}
+        user={user}
+        onRefresh={loadAccounts}
+      />
+
       <OnboardingModal
         isOpen={showOnboardModal}
         onClose={() => setShowOnboardModal(false)}
         onSuccess={async (newUser) => {
           setShowOnboardModal(false);
-          await loadAccounts();
+          if (newUser && newUser.email) {
+            await handleLogin(newUser.email, 'Password123!');
+          }
         }}
       />
 
-      {/* First Admin Bootstrap Dialog */}
       <BootstrapAdminModal
         isOpen={showBootstrapModal}
         onClose={() => setShowBootstrapModal(false)}
-        onSuccess={async (adminUser) => {
-          setShowBootstrapModal(false);
-          await loadAccounts();
-        }}
       />
-
-      <footer className="border-t border-obsidian-800 py-6 text-center text-xs text-slate-500 font-mono">
-        BalanceVault Core • PostgreSQL Double-Entry Engine • Redis Sliding-Window Rate Limiting • Zero-Sum Invariant Enforced
-      </footer>
     </div>
   );
 }

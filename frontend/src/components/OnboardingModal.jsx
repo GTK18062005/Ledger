@@ -48,170 +48,161 @@ export default function OnboardingModal({ isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl w-full max-w-lg p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+      <div className="bg-white border border-[#e5ede3] rounded-3xl w-full max-w-lg p-7 shadow-2xl relative">
         <button
           onClick={handleReset}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-obsidian-800"
+          className="absolute top-5 right-5 text-[#6c8a77] hover:text-[#122a1f] p-1 rounded-lg"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
 
         {!createdUser ? (
           <div>
-            <div className="flex items-center space-x-2.5 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center">
-                <UserPlus className="w-4 h-4 text-emerald-400" />
+            <div className="mb-5">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a]">
+                CLIENT ONBOARDING
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white tracking-tight">Customer Onboarding</h3>
-                <p className="text-xs text-slate-400">
-                  Provision new KYC user and automatically mint primary ledger account.
-                </p>
-              </div>
+              <h3 className="font-serif text-2xl font-normal text-[#122a1f] mt-0.5">
+                Open Client Account
+              </h3>
+              <p className="text-xs text-[#52705e] mt-1">
+                Registers user, assigns ACCOUNT_HOLDER role, and provisions primary depository vault.
+              </p>
             </div>
 
             {error && (
-              <div className="my-4 p-3 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <div className="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
                   Full Legal Name
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Johnathan Vance"
+                  placeholder="e.g. Tharun Kumar Gangavarapu"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] focus:outline-none focus:border-[#133e2b]"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
-                  Corporate / Personal Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. jvance@swisscapital.ch"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Password (Min 8 Chars)
+                  <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="user@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                    Mobile Contact
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+91 98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                    Password
                   </label>
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Phone Contact
+                  <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                    Currency
                   </label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                  >
+                    <option value="INR">INR — Indian Rupee</option>
+                    <option value="USD">USD — US Dollar</option>
+                    <option value="EUR">EUR — Euro</option>
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
-                  Base Vault Currency
-                </label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                >
-                  <option value="INR">INR — Indian Rupee (Default Core)</option>
-                  <option value="USD">USD — US Dollar</option>
-                  <option value="EUR">EUR — Euro</option>
-                  <option value="GBP">GBP — British Pound</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-obsidian-750">
+              <div className="flex justify-end space-x-3 pt-3">
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                  className="px-4 py-2 text-xs font-semibold text-[#52705e]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-sm transition flex items-center space-x-1.5"
+                  className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center space-x-2"
                 >
-                  <span>{loading ? 'Minting Identity...' : 'Register & Provision Vault'}</span>
+                  <span>{loading ? 'Registering...' : 'Complete Onboarding'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </form>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="w-10 h-10 rounded-full bg-emerald-950/70 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-2">
+          <div className="text-center py-4 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-[#eaf2e8] text-[#133e2b] flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-white">Onboarding Complete</h3>
-              <p className="text-xs text-slate-400">
-                Identity established with RBAC role <span className="font-mono text-emerald-400">ACCOUNT_HOLDER</span>.
+              <h3 className="font-serif text-2xl font-normal text-[#122a1f]">
+                Client Onboarded Successfully
+              </h3>
+              <p className="text-xs text-[#52705e] mt-1">
+                Account Holder registered and primary vault provisioned.
               </p>
             </div>
 
-            <div className="bg-obsidian-950 p-4 rounded-lg border border-obsidian-750 space-y-2 text-xs font-mono">
-              <div className="flex justify-between border-b border-obsidian-800 pb-1.5">
-                <span className="text-slate-400">Owner User ID:</span>
-                <span className="text-slate-200 truncate max-w-[220px]">{createdUser.userId}</span>
-              </div>
-              <div className="flex justify-between border-b border-obsidian-800 pb-1.5">
-                <span className="text-slate-400">Primary Account:</span>
-                <span className="text-emerald-400 font-bold">{createdUser.primaryAccountNumber}</span>
-              </div>
-              <div className="flex justify-between border-b border-obsidian-800 pb-1.5">
-                <span className="text-slate-400">Currency:</span>
-                <span className="text-white">{currency}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Opening Balance:</span>
-                <span className="text-white">0.0000 {currency}</span>
-              </div>
+            <div className="bg-[#f8faf7] border border-[#eaf0e8] rounded-2xl p-4 text-left font-mono text-xs space-y-2">
+              <div><span className="text-[#6c8a77]">User ID:</span> {createdUser.userId}</div>
+              <div><span className="text-[#6c8a77]">Email:</span> {createdUser.email}</div>
+              <div><span className="text-[#6c8a77]">Vault Number:</span> <span className="font-bold text-[#133e2b]">{createdUser.primaryAccountNumber}</span></div>
+              <div><span className="text-[#6c8a77]">Role:</span> {createdUser.role}</div>
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition"
-              >
-                Access Active Session
-              </button>
-            </div>
+            <button
+              onClick={handleReset}
+              className="w-full py-2.5 bg-[#133e2b] text-white font-semibold rounded-xl text-xs"
+            >
+              Close & Proceed to Sign In
+            </button>
           </div>
         )}
       </div>
     </div>
   );
 }
-

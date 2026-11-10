@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, ArrowDownLeft, ArrowUpRight, AlertOctagon, RefreshCw, Filter, ShieldCheck, Hash, ShieldAlert, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X } from 'lucide-react';
+import { FileText, ArrowDownLeft, ArrowUpRight, AlertOctagon, RefreshCw, Filter, ShieldCheck, Hash, ShieldAlert, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 
 export default function StatementViewer({
   selectedAccount,
@@ -58,28 +58,31 @@ export default function StatementViewer({
   };
 
   return (
-    <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
-      {/* Header and Account Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-obsidian-750">
+    <div className="space-y-8 pb-16">
+      {/* Header & Account Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center space-x-2">
-            <FileText className="w-4 h-4 text-emerald-400" />
-            <span>Immutable Double-Entry Statement</span>
-          </h2>
-          <p className="text-xs text-slate-400">
+          <div className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#5c7c6a]">
+            AUDIT JOURNAL
+          </div>
+          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#122a1f] mt-1">
+            Statements
+          </h1>
+          <p className="text-xs text-[#52705e] mt-1">
             Provable append-only journal of validated Debits, Credits, and audited Refusals.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <label className="text-xs text-slate-400 font-mono">Vault:</label>
+        {/* Vault selector dropdown */}
+        <div className="flex items-center space-x-2.5">
+          <label className="text-xs text-[#52705e] font-semibold">Vault:</label>
           <select
             value={selectedAccount ? selectedAccount.id : ''}
             onChange={(e) => {
               const acc = accounts.find(a => a.id === e.target.value);
               if (acc) onSelectAccount(acc);
             }}
-            className="bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+            className="bg-white border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b] shadow-xs"
           >
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
@@ -92,250 +95,233 @@ export default function StatementViewer({
             <button
               onClick={() => onLoadStatement(selectedAccount.id)}
               disabled={loading}
-              className="p-1.5 bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 rounded-lg border border-obsidian-700 transition"
+              className="p-2 bg-white hover:bg-[#f2f6f1] text-[#1a4a35] rounded-xl border border-[#d6e2d4] transition shadow-xs"
               title="Refresh Statement"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#133e2b]' : ''}`} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Search & Filter Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-obsidian-950/60 p-3 rounded-lg border border-obsidian-800">
-        {/* Search Bar */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            placeholder="Search statement by ID, counterparty, memo, amount..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-obsidian-950 border border-obsidian-750 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300 transition"
-              title="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Filter Tabs & Page size */}
-        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3">
-          <div className="flex items-center space-x-1.5 overflow-x-auto">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            {[
-              { key: 'ALL', label: 'All' },
-              { key: 'CREDIT', label: 'Credits (+)' },
-              { key: 'DEBIT', label: 'Debits (-)' },
-              { key: 'REFUSED', label: 'Refusals' }
-            ].map(f => (
+      {/* Main Statement Container */}
+      <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-5">
+        {/* Search & Filter Toolbar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-[#f8faf7] p-3 rounded-2xl border border-[#eaf0e8]">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-3.5 h-3.5 text-[#6c8a77] absolute left-3.5 top-2.5" />
+            <input
+              type="text"
+              placeholder="Search statement by ID, counterparty, memo, amount..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-[#d6e2d4] rounded-xl pl-9 pr-8 py-1.5 text-xs text-[#122a1f] placeholder-[#819e8e] focus:outline-none focus:border-[#133e2b] font-mono transition"
+            />
+            {searchQuery && (
               <button
-                key={f.key}
-                onClick={() => setFilterType(f.key)}
-                className={`text-xs px-2.5 py-1 rounded-md font-mono font-medium transition ${
-                  filterType === f.key
-                    ? 'bg-obsidian-800 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-obsidian-900'
-                }`}
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2 text-[#6c8a77] hover:text-[#122a1f] transition"
+                title="Clear search"
               >
-                {f.label}
+                <X className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
           </div>
 
-          <div className="flex items-center space-x-2 font-mono text-xs text-slate-400">
-            <span>Per page:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="bg-obsidian-950 border border-obsidian-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
+          {/* Filter Tabs & Page size */}
+          <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3">
+            <div className="flex items-center space-x-1.5 overflow-x-auto">
+              {[
+                { key: 'ALL', label: 'All' },
+                { key: 'CREDIT', label: 'Credits (+)' },
+                { key: 'DEBIT', label: 'Debits (-)' },
+                { key: 'REFUSED', label: 'Refusals' }
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilterType(f.key)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-mono font-medium transition ${
+                    filterType === f.key
+                      ? 'bg-[#133e2b] text-white shadow-xs font-semibold'
+                      : 'text-[#597866] hover:text-[#122a1f] hover:bg-[#eef3ec]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center space-x-2 font-mono text-xs text-[#52705e]">
+              <span>Rows:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="bg-white border border-[#d6e2d4] rounded-lg px-2 py-1 text-xs text-[#122a1f] focus:outline-none focus:border-[#133e2b] font-mono"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Statement Table */}
-      {!selectedAccount ? (
-        <div className="text-center py-12 text-slate-500 text-xs font-mono">
-          Select an account above to inspect its append-only ledger entries.
-        </div>
-      ) : totalItems === 0 ? (
-        <div className="text-center py-12 text-slate-400 text-xs bg-obsidian-950/40 rounded-lg border border-obsidian-800 font-mono space-y-2">
-          <p>No ledger entries match {searchQuery ? `"${searchQuery}"` : 'this criteria'}.</p>
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="text-xs text-emerald-400 hover:underline"
-            >
-              Clear search filter
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="overflow-x-auto rounded-lg border border-obsidian-750 bg-obsidian-950">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-obsidian-900/90 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-obsidian-750">
-                <tr>
-                  <th className="px-4 py-3">Timestamp / Hash</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Counterparty / Details</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  <th className="px-4 py-3 text-right">Running Balance</th>
-                  <th className="px-4 py-3 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-obsidian-800/80 font-mono text-[11px]">
-                {paginatedStatement.map((item, idx) => {
-                  const isRefused = item.status === 'REFUSED';
-                  const isCredit = item.entryType === 'CREDIT' && !isRefused;
-                  const isDebit = item.entryType === 'DEBIT' && !isRefused;
+        {/* Statement Table */}
+        {!selectedAccount ? (
+          <div className="text-center py-12 text-[#6c8a77] text-xs font-mono">
+            Select an account above to inspect its append-only ledger entries.
+          </div>
+        ) : totalItems === 0 ? (
+          <div className="text-center py-12 text-[#52705e] text-xs bg-[#f8faf7] rounded-2xl border border-[#eaf0e8] font-mono space-y-2">
+            <p>No ledger entries match {searchQuery ? `"${searchQuery}"` : 'this filter criteria'}.</p>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-[#133e2b] font-semibold hover:underline"
+              >
+                Clear search filter
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="overflow-x-auto rounded-2xl border border-[#e5ede3] bg-white">
+              <table className="w-full text-left text-xs text-[#122a1f]">
+                <thead className="bg-[#f8faf7] text-[#597866] uppercase font-mono text-[10px] tracking-wider border-b border-[#e5ede3]">
+                  <tr>
+                    <th className="px-4 py-3">Timestamp / Hash</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Counterparty / Details</th>
+                    <th className="px-4 py-3 text-right">Amount</th>
+                    <th className="px-4 py-3 text-right">Running Balance</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#edf3ec] font-mono text-[11px]">
+                  {paginatedStatement.map((item, idx) => {
+                    const isRefused = item.status === 'REFUSED';
+                    const isCredit = item.entryType === 'CREDIT' && !isRefused;
 
-                  return (
-                    <tr
-                      key={item.id || idx}
-                      className={`hover:bg-obsidian-850/60 transition ${isRefused ? 'bg-amber-950/10' : ''}`}
-                    >
-                      {/* Timestamp & Hash snippet */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="text-slate-200 font-medium">
-                          {new Date(item.timestamp).toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-mono flex items-center space-x-1 mt-0.5">
-                          <Hash className="w-2.5 h-2.5" />
-                          <span>{(item.id || 'ENTRY-INIT').substring(0, 16)}...</span>
-                        </div>
-                      </td>
-
-                      {/* Entry Type */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {isRefused ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-500/30 flex items-center space-x-1 w-max">
-                            <AlertOctagon className="w-3 h-3" />
-                            <span>REFUSED</span>
-                          </span>
-                        ) : isCredit ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 w-max">
-                            <ArrowDownLeft className="w-3 h-3" />
-                            <span>CREDIT</span>
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/60 text-rose-300 border border-rose-500/30 flex items-center space-x-1 w-max">
-                            <ArrowUpRight className="w-3 h-3" />
-                            <span>DEBIT</span>
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Details / Counterparty */}
-                      <td className="px-4 py-3">
-                        <div className="text-slate-200 max-w-xs truncate">
-                          {item.counterpartyAccount || item.description || (isRefused ? item.failureReason : 'Internal Ledger Operation')}
-                        </div>
-                        {isRefused && (
-                          <div className="text-[10px] text-amber-400 font-mono mt-0.5">
-                            Invariant Conserved: No balances altered
+                    return (
+                      <tr key={idx} className="hover:bg-[#f6f9f5] transition">
+                        {/* Timestamp & Tx Hash */}
+                        <td className="px-4 py-3 font-mono text-[#52705e]">
+                          <div className="font-semibold text-[#122a1f]">
+                            {new Date(item.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </div>
-                        )}
-                      </td>
+                          <div className="text-[10px] text-[#789685]">
+                            {new Date(item.timestamp).toLocaleTimeString()}
+                          </div>
+                          <div className="text-[9px] text-[#91ad9d] truncate max-w-[140px]" title={item.transactionId}>
+                            Tx: {item.transactionId ? item.transactionId.substring(0, 16) : 'N/A'}...
+                          </div>
+                        </td>
 
-                      {/* Amount */}
-                      <td className={`px-4 py-3 text-right font-bold tabular-nums whitespace-nowrap ${
-                        isRefused ? 'text-slate-500 line-through' : isCredit ? 'text-emerald-400' : 'text-rose-400'
-                      }`}>
-                        {isCredit ? '+' : isDebit ? '-' : ''}
-                        {parseFloat(item.amount).toFixed(4)} {selectedAccount.currency}
-                      </td>
+                        {/* Entry Type */}
+                        <td className="px-4 py-3">
+                          {isRefused ? (
+                            <span className="inline-flex items-center space-x-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 text-[10px] font-bold">
+                              <AlertOctagon className="w-3 h-3 mr-0.5" />
+                              REFUSAL
+                            </span>
+                          ) : isCredit ? (
+                            <span className="inline-flex items-center space-x-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px] font-bold">
+                              <ArrowDownLeft className="w-3 h-3 mr-0.5 text-emerald-600" />
+                              CREDIT
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1 text-slate-800 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 text-[10px] font-bold">
+                              <ArrowUpRight className="w-3 h-3 mr-0.5 text-slate-500" />
+                              DEBIT
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Running Balance */}
-                      <td className="px-4 py-3 text-right font-bold tabular-nums text-slate-100 whitespace-nowrap">
-                        {item.runningBalance !== null && item.runningBalance !== undefined
-                          ? formatBalance(item.runningBalance, selectedAccount.currency)
-                          : '—'}
-                      </td>
+                        {/* Counterparty / Description */}
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-[#122a1f] flex items-center space-x-1">
+                            <span>{item.counterpartyAccount || 'Direct Clearing'}</span>
+                          </div>
+                          <div className="text-[10px] text-[#698675] font-sans mt-0.5">
+                            {item.description || item.reason || 'Double-entry transfer'}
+                          </div>
+                        </td>
 
-                      {/* Status Badge */}
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        {/* Amount */}
+                        <td className={`px-4 py-3 text-right font-bold text-xs ${
                           isRefused
-                            ? 'bg-amber-950/60 text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
+                            ? 'text-rose-600 line-through'
+                            : isCredit
+                            ? 'text-emerald-700'
+                            : 'text-[#122a1f]'
                         }`}>
-                          {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          {isRefused ? '₹0.00' : `${isCredit ? '+' : '-'}₹${parseFloat(item.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                        </td>
 
-          {/* Pagination Controls */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 font-mono text-xs">
-            <div className="text-slate-400 text-[11px]">
-              Showing <span className="font-bold text-slate-200">{startIndex + 1}</span> to <span className="font-bold text-slate-200">{endIndex}</span> of <span className="font-bold text-slate-200">{totalItems}</span> entries
+                        {/* Running Balance */}
+                        <td className="px-4 py-3 text-right text-[#52705e]">
+                          {isRefused ? (
+                            <span className="text-[#91ad9d] italic text-[10px]">Unchanged</span>
+                          ) : item.runningBalance != null ? (
+                            formatBalance(item.runningBalance)
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
+                            isRefused
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-[#eaf2e8] text-[#133e2b] border-[#cbdec7]'
+                          }`}>
+                            {item.status || 'COMMITTED'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            <div className="flex items-center space-x-1">
-              <button
-                type="button"
-                onClick={() => setCurrentPage(1)}
-                disabled={validCurrentPage === 1}
-                className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
-                title="First Page"
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </button>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs font-mono text-[#52705e]">
+                <div>
+                  Showing {startIndex + 1}–{endIndex} of {totalItems} entries
+                </div>
 
-              <button
-                type="button"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={validCurrentPage === 1}
-                className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
-                title="Previous Page"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={validCurrentPage <= 1}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-[#d6e2d4] hover:bg-[#f2f6f1] disabled:opacity-40 transition text-xs font-semibold"
+                  >
+                    Prev
+                  </button>
 
-              <span className="px-3 py-1 text-slate-300 bg-obsidian-950 border border-obsidian-750 rounded text-xs font-bold">
-                Page {validCurrentPage} of {totalPages}
-              </span>
+                  <span className="text-xs font-semibold text-[#122a1f]">
+                    {validCurrentPage} of {totalPages}
+                  </span>
 
-              <button
-                type="button"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={validCurrentPage === totalPages}
-                className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
-                title="Next Page"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={validCurrentPage === totalPages}
-                className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
-                title="Last Page"
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={validCurrentPage >= totalPages}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-[#d6e2d4] hover:bg-[#f2f6f1] disabled:opacity-40 transition text-xs font-semibold"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

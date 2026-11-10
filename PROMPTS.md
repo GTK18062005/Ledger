@@ -367,5 +367,46 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
 - **Commit Reference:** [`52d5d73`](https://github.com/GTK18062005/Ledger/commit/52d5d73)
 
+---
+
+## Entry 12: Swiss-Grade Architectural Redesign Aligned with BalanceVault Reference Deployment
+
+- **Date:** 2026-11-11 (Early Morning)
+- **Target Area:** Swiss Banking UI/UX, Information Architecture & Brand Alignment
+- **What was asked for:**  
+  The user provided screenshots from the live benchmark demo (`https://balance-vault.vercel.app`) covering the Overview dashboard, Account Requests, and Quick Actions, requesting to completely transform the application to match this reference design.
+- **What the tool produced:**  
+  Previously, the UI was rendered in an AI-typical dark obsidian theme (`#080D1A`) with glowing neon green accents, dark container panels, and generic sans-serif typography.
+- **What was wrong with it:**  
+  The evaluation criteria explicitly required removing AI-looking design artifacts (neon glows, dark-mode gradients). The official Swiss banking benchmark (`https://balance-vault.vercel.app`) employs a sophisticated, light-mode palette: deep forest pine green fixed sidebar (`#0e3020`), warm cream background (`#f7f9f6`), soft sage hero banner (`#eaf2e8`), warm almond quick action cards (`#f5f2ea`), Playfair Display serif headings with italicized personal greetings, and structured sections (`YOUR SPACE`, `CONNECTED`, `ON YOUR TERMS`, `ONBOARDING`).
+- **What was done instead:**  
+  1. **Two-Column Swiss Banking Layout:**
+     - Created [`Sidebar.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/Sidebar.jsx) with circular `b` seal logo, workspace navigation (`Overview`, `Accounts`, `Statements`, `Account request`, `Admin & Audit`), and bottom `Protected ledger: Secure by design` trust card.
+     - Created [`Header.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/Header.jsx) with dynamic breadcrumb navigation (`Workspace / Overview`), live `• Systems operational` status indicator, user initial badge (`T`), display name, role label, and quick persona switcher.
+  2. **Faithful Overview Screen ([`OverviewTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/OverviewTab.jsx)):**
+     - Soft sage hero banner (`#eaf2e8`) with asterisk eyebrow (`* YOUR FINANCIAL OVERVIEW`), serif italic greeting (`Good to see you, Tharun`), concentric circle graphics, and `01 / 03` counter.
+     - `Account overview` cards with circular SVG ring indicators and active account ratios.
+     - `Your accounts` list with connected cards and empty state prompting `Request an account`.
+     - `Quick actions` section with 3 warm almond cards (`#f5f2ea`) for `Deposit`, `Withdraw`, and `Transfer`.
+  3. **Dedicated Onboarding Tab ([`AccountRequestTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AccountRequestTab.jsx)):**
+     - Matches Image 2 with `Requested account type` dropdown (`Business`, `Personal`, etc.), pending request validation banner, and primary dark green `Submit request` button.
+     - Displays `Your requests` journal with `PENDING` status pills and audit timestamps.
+  4. **Light-Themed Modal Dialogs:**
+     - Created [`DepositModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/DepositModal.jsx), [`WithdrawModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/WithdrawModal.jsx), and [`TransferModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/TransferModal.jsx), fully integrated with the backend double-entry clearing accounts (`ACC-SYSTEM-FUNDING` and `ACC-SYSTEM-SETTLEMENT`).
+  5. **Refactored All Remaining Views & Purged Legacy UI:**
+     - Restyled [`AccountDashboard.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AccountDashboard.jsx), [`StatementViewer.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/StatementViewer.jsx), [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx), and [`LoginPage.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/LoginPage.jsx) into the Swiss Light Banking design system.
+     - Permanently deleted obsolete dark theme artifacts: `DemoUserSwitcher.jsx` (the dark person switcher bar), `Navbar.jsx` (the dark header bar), and `TransferForm.jsx` (the 40+ button wall of quick test accounts).
+- **Primary Source Code:**  
+  - [`Sidebar.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/Sidebar.jsx)
+  - [`Header.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/Header.jsx)
+  - [`OverviewTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/OverviewTab.jsx)
+  - [`AccountRequestTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AccountRequestTab.jsx)
+  - [`DepositModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/DepositModal.jsx)
+  - [`WithdrawModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/WithdrawModal.jsx)
+  - [`TransferModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/TransferModal.jsx)
+  - [`App.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/App.jsx)
+- **Commit Reference:** [`cf8de12`](https://github.com/GTK18062005/Ledger/commit/cf8de12)
+
+
 
 
