@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Primary PostgreSQL 16 Database
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: balancevault-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: balancevault
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: balancevault_secure_pwd_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - balancevault-postgres-data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/roles_and_permissions.sql:/docker-entrypoint-initdb.d/01_roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d balancevault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - balancevault-net
+
+  # ============================================================================
+  # Distributed Redis 7 Cache & Sliding-Window Rate Limiter
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: balancevault-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - balancevault-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - balancevault-net
+
+  # ============================================================================
+  # Spring Boot 3.3.4 Financial Engine (BalanceVault Core)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: balancevault-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/balancevault
+      DB_USERNAME: postgres
+      DB_PASSWORD: balancevault_secure_pwd_123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: c3VwZXJfc2VjdXJlX3Byb2R1Y3Rpb25fand0X3NpZ25pbmdfa2V5XzIwMjZfYmFsYW5jZXZhdWx0X2FjdW1lbl85ODc2NQ==
+      ADMIN_BOOTSTRAP_SECRET: SuperSecretBootstrapMasterToken2026!
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - balancevault-net
+
+  # ============================================================================
+  # React + Vite Production SPA (Nginx Reverse Proxy)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: balancevault-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - balancevault-net
+
+volumes:
+  balancevault-postgres-data:
+    name: balancevault-postgres-data
+  balancevault-redis-data:
+    name: balancevault-redis-data
+
+networks:
+  balancevault-net:
+    name: balancevault-net
+    driver: bridge

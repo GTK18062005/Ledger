@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, ArrowDownLeft, ArrowUpRight, AlertOctagon, RefreshCw, Filter, CheckCircle2, XCircle } from 'lucide-react';
+import { FileText, ArrowDownLeft, ArrowUpRight, AlertOctagon, RefreshCw, Filter, ShieldCheck, Hash, ShieldAlert } from 'lucide-react';
 
-export default function StatementViewer({ selectedAccount, accounts, onSelectAccount, onLoadStatement, statement, loading }) {
+export default function StatementViewer({
+  selectedAccount,
+  accounts,
+  onSelectAccount,
+  onLoadStatement,
+  statement,
+  loading
+}) {
   const [filterType, setFilterType] = useState('ALL'); // 'ALL', 'CREDIT', 'DEBIT', 'REFUSED'
 
   useEffect(() => {
@@ -16,41 +23,38 @@ export default function StatementViewer({ selectedAccount, accounts, onSelectAcc
     return item.entryType === filterType && item.status !== 'REFUSED';
   });
 
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2
-    }).format(val || 0);
+  const formatBalance = (val, currency = 'INR') => {
+    const num = parseFloat(val) || 0;
+    return `${num.toLocaleString('en-IN', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ${currency}`;
   };
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+    <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
       {/* Header and Account Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-obsidian-750">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-            <FileText className="w-5 h-5 text-sky-400" />
+          <h2 className="text-base font-bold text-white flex items-center space-x-2">
+            <FileText className="w-4 h-4 text-emerald-400" />
             <span>Immutable Double-Entry Statement</span>
           </h2>
           <p className="text-xs text-slate-400">
-            Append-only chronological journal of Debits, Credits, and Provable Refusal attempts.
+            Provable append-only journal of validated Debits, Credits, and audited Refusals.
           </p>
         </div>
 
         <div className="flex items-center space-x-3">
-          <label className="text-xs text-slate-400 font-medium">Vault:</label>
+          <label className="text-xs text-slate-400 font-mono">Vault:</label>
           <select
             value={selectedAccount ? selectedAccount.id : ''}
             onChange={(e) => {
               const acc = accounts.find(a => a.id === e.target.value);
               if (acc) onSelectAccount(acc);
             }}
-            className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 font-mono"
+            className="bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
           >
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
-                {acc.accountNumber} ({acc.ownerEmail})
+                {acc.accountNumber} ({acc.ownerEmail || 'Owner'}) [{acc.currency}]
               </option>
             ))}
           </select>
@@ -59,124 +63,139 @@ export default function StatementViewer({ selectedAccount, accounts, onSelectAcc
             <button
               onClick={() => onLoadStatement(selectedAccount.id)}
               disabled={loading}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition"
+              className="p-1.5 bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 rounded-lg border border-obsidian-700 transition"
               title="Refresh Statement"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Filter Chips */}
+      {/* Filter Tabs */}
       <div className="flex items-center space-x-2">
         <Filter className="w-3.5 h-3.5 text-slate-500" />
-        <span className="text-xs text-slate-400 mr-2">Filter:</span>
-        {['ALL', 'CREDIT', 'DEBIT', 'REFUSED'].map(f => (
+        <span className="text-xs text-slate-400 font-mono mr-1">Filter:</span>
+        {[
+          { key: 'ALL', label: 'All Postings' },
+          { key: 'CREDIT', label: 'Credits (+)' },
+          { key: 'DEBIT', label: 'Debits (-)' },
+          { key: 'REFUSED', label: 'Refusals & Violations' }
+        ].map(f => (
           <button
-            key={f}
-            onClick={() => setFilterType(f)}
-            className={`text-xs px-3 py-1 rounded-lg font-semibold transition ${
-              filterType === f
-                ? 'bg-slate-800 text-sky-400 border border-sky-500/50 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 border border-transparent'
+            key={f.key}
+            onClick={() => setFilterType(f.key)}
+            className={`text-xs px-2.5 py-1 rounded-md font-mono font-medium transition ${
+              filterType === f.key
+                ? 'bg-obsidian-800 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-obsidian-900'
             }`}
           >
-            {f}
+            {f.label}
           </button>
         ))}
       </div>
 
       {/* Statement Table */}
       {!selectedAccount ? (
-        <div className="text-center py-12 text-slate-500 text-xs">
+        <div className="text-center py-12 text-slate-500 text-xs font-mono">
           Select an account above to inspect its append-only ledger entries.
         </div>
       ) : filteredStatement.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
+        <div className="text-center py-12 text-slate-400 text-xs bg-obsidian-950/40 rounded-lg border border-obsidian-800 font-mono">
           No ledger entries match this criteria.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-950/80 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Initiator / Role</th>
-                <th className="py-3 px-4">Entry Type</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Status & Reason</th>
-                <th className="py-3 px-4 text-right">Resulting Balance</th>
+        <div className="overflow-x-auto rounded-lg border border-obsidian-750 bg-obsidian-950">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-obsidian-900/90 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-obsidian-750">
+              <tr>
+                <th className="px-4 py-3">Timestamp / Hash</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Counterparty / Details</th>
+                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3 text-right">Running Balance</th>
+                <th className="px-4 py-3 text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
-              {filteredStatement.map((row) => {
-                const isRefused = row.status === 'REFUSED';
-                const isCredit = row.entryType === 'CREDIT' && !isRefused;
-                const isDebit = row.entryType === 'DEBIT' && !isRefused;
+            <tbody className="divide-y divide-obsidian-800/80 font-mono text-[11px]">
+              {filteredStatement.map((item, idx) => {
+                const isRefused = item.status === 'REFUSED';
+                const isCredit = item.entryType === 'CREDIT' && !isRefused;
+                const isDebit = item.entryType === 'DEBIT' && !isRefused;
 
                 return (
-                  <tr key={row.id} className="hover:bg-slate-800/30 transition">
-                    {/* Timestamp */}
-                    <td className="py-3 px-4 text-slate-300">
-                      {new Date(row.timestamp).toLocaleDateString()} {new Date(row.timestamp).toLocaleTimeString()}
+                  <tr
+                    key={item.id || idx}
+                    className={`hover:bg-obsidian-850/60 transition ${isRefused ? 'bg-amber-950/10' : ''}`}
+                  >
+                    {/* Timestamp & Hash snippet */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-slate-200 font-medium">
+                        {new Date(item.timestamp).toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono flex items-center space-x-1 mt-0.5">
+                        <Hash className="w-2.5 h-2.5" />
+                        <span>{(item.id || 'ENTRY-INIT').substring(0, 16)}...</span>
+                      </div>
                     </td>
 
-                    {/* Initiator */}
-                    <td className="py-3 px-4">
-                      <div className="text-white font-medium">{row.initiatorEmail || 'System'}</div>
-                      <span className="text-[10px] text-slate-400 uppercase font-sans">
-                        {row.initiatorRole}
-                      </span>
-                    </td>
-
-                    {/* Type Badge */}
-                    <td className="py-3 px-4">
+                    {/* Entry Type */}
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {isRefused ? (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-500/30 flex items-center space-x-1 w-max">
                           <AlertOctagon className="w-3 h-3" />
-                          <span>REFUSED ATTEMPT</span>
+                          <span>REFUSED</span>
                         </span>
                       ) : isCredit ? (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                          <ArrowDownLeft className="w-3 h-3 text-emerald-400" />
-                          <span>CREDIT (+)</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 w-max">
+                          <ArrowDownLeft className="w-3 h-3" />
+                          <span>CREDIT</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                          <ArrowUpRight className="w-3 h-3 text-rose-400" />
-                          <span>DEBIT (-)</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/60 text-rose-300 border border-rose-500/30 flex items-center space-x-1 w-max">
+                          <ArrowUpRight className="w-3 h-3" />
+                          <span>DEBIT</span>
                         </span>
+                      )}
+                    </td>
+
+                    {/* Details / Counterparty */}
+                    <td className="px-4 py-3">
+                      <div className="text-slate-200 max-w-xs truncate">
+                        {item.counterpartyAccount || item.description || (isRefused ? item.failureReason : 'Internal Ledger Operation')}
+                      </div>
+                      {isRefused && (
+                        <div className="text-[10px] text-amber-400 font-mono mt-0.5">
+                          Invariant Conserved: No balances altered
+                        </div>
                       )}
                     </td>
 
                     {/* Amount */}
-                    <td className="py-3 px-4">
-                      <span className={`font-bold ${isRefused ? 'text-amber-400 line-through opacity-70' : isCredit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isCredit ? '+' : isDebit ? '-' : ''}{formatCurrency(row.amount)}
-                      </span>
-                    </td>
-
-                    {/* Status & Failure Reason */}
-                    <td className="py-3 px-4">
-                      {isRefused ? (
-                        <div className="flex items-center space-x-1.5 text-amber-300">
-                          <XCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                          <span className="font-sans text-[11px] font-semibold">
-                            {row.failureReason || 'REFUSED'}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-1.5 text-emerald-400">
-                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="font-sans text-[11px] font-semibold">COMPLETED</span>
-                        </div>
-                      )}
+                    <td className={`px-4 py-3 text-right font-bold tabular-nums whitespace-nowrap ${
+                      isRefused ? 'text-slate-500 line-through' : isCredit ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      {isCredit ? '+' : isDebit ? '-' : ''}
+                      {parseFloat(item.amount).toFixed(4)} {selectedAccount.currency}
                     </td>
 
                     {/* Running Balance */}
-                    <td className="py-3 px-4 text-right font-extrabold text-white text-sm">
-                      {formatCurrency(row.runningBalance)}
+                    <td className="px-4 py-3 text-right font-bold tabular-nums text-slate-100 whitespace-nowrap">
+                      {item.runningBalance !== null && item.runningBalance !== undefined
+                        ? formatBalance(item.runningBalance, selectedAccount.currency)
+                        : '—'}
+                    </td>
+
+                    {/* Status Badge */}
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        isRefused
+                          ? 'bg-amber-950/60 text-amber-400 border border-amber-500/30'
+                          : 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
+                      }`}>
+                        {item.status}
+                      </span>
                     </td>
                   </tr>
                 );

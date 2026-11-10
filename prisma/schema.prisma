@@ -1,0 +1,152 @@
+// ==============================================================================
+// BalanceVault / LedgerLine Prisma Schema
+// ==============================================================================
+// This schema directly mirrors the PostgreSQL relational schema defined by Flyway.
+// Allows developer inspection via Prisma Studio (npx prisma studio) or Prisma Client.
+// ==============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ACCOUNT_HOLDER
+  ADMIN
+  AUDITOR
+}
+
+enum AccountStatus {
+  ACTIVE
+  FROZEN
+  SUSPENDED
+  CLOSED
+}
+
+enum TransactionType {
+  TRANSFER
+  DEPOSIT
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  COMPLETED
+  FAILED
+  REFUSED
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique @db.VarChar(255)
+  passwordHash String        @map("password_hash") @db.VarChar(255)
+  role         Role
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  accounts     Account[]
+  transactions Transaction[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Account {
+  id            String        @id @default(uuid()) @db.Uuid
+  accountNumber String        @unique @map("account_number") @db.VarChar(64)
+  ownerId       String        @map("owner_id") @db.Uuid
+  owner         User          @relation(fields: [ownerId], references: [id])
+  balance       Decimal       @default(0.0000) @db.Decimal(19, 4)
+  currency      String        @default("INR") @db.VarChar(8)
+  status        AccountStatus @default(ACTIVE)
+  isSystem      Boolean       @default(false) @map("is_system")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  ledgerEntries LedgerEntry[]
+
+  @@index([ownerId], name: "idx_accounts_owner")
+  @@index([accountNumber], name: "idx_accounts_number")
+  @@map("accounts")
+}
+
+model Transaction {
+  id              String            @id @default(uuid()) @db.Uuid
+  transactionType TransactionType   @map("transaction_type")
+  idempotencyKey  String?           @map("idempotency_key") @db.VarChar(255)
+  initiatedBy     String            @map("initiated_by") @db.Uuid
+  initiator       User              @relation(fields: [initiatedBy], references: [id])
+  status          TransactionStatus
+  failureReason   String?           @map("failure_reason") @db.VarChar(255)
+  amount          Decimal           @default(0.0000) @db.Decimal(19, 4)
+  adminReason     String?           @map("admin_reason") @db.VarChar(500)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  ledgerEntries   LedgerEntry[]
+
+  @@index([idempotencyKey], name: "idx_transactions_idempotency")
+  @@map("transactions")
+}
+
+model LedgerEntry {
+  id             String      @id @default(uuid()) @db.Uuid
+  transactionId  String      @map("transaction_id") @db.Uuid
+  transaction    Transaction @relation(fields: [transactionId], references: [id])
+  accountId      String      @map("account_id") @db.Uuid
+  account        Account     @relation(fields: [accountId], references: [id])
+  entryType      EntryType   @map("entry_type")
+  amount         Decimal     @db.Decimal(19, 4)
+  runningBalance Decimal     @map("running_balance") @db.Decimal(19, 4)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@index([accountId], name: "idx_ledger_account")
+  @@index([transactionId], name: "idx_ledger_tx")
+  @@map("ledger_entries")
+}
+
+model AuditLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String?   @map("user_id") @db.Uuid
+  user           User?     @relation(fields: [userId], references: [id])
+  userRole       String?   @map("user_role") @db.VarChar(32)
+  accountId      String?   @map("account_id") @db.Uuid
+  operationType  String    @map("operation_type") @db.VarChar(64)
+  resource       String?   @db.VarChar(255)
+  status         String    @db.VarChar(32)
+  amount         Decimal?  @db.Decimal(19, 4)
+  failureReason  String?   @map("failure_reason") @db.VarChar(255)
+  idempotencyKey String?   @map("idempotency_key") @db.VarChar(255)
+  details        String?   @db.VarChar(1024)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@index([userId], name: "idx_audit_user")
+  @@index([accountId], name: "idx_audit_account")
+  @@index([createdAt], name: "idx_audit_created")
+  @@index([idempotencyKey], name: "idx_audit_idempotency")
+  @@map("audit_logs")
+}
+
+model IdempotencyRecord {
+  idempotencyKey String            @id @map("idempotency_key") @db.VarChar(255)
+  userId         String            @map("user_id") @db.Uuid
+  operationType  String            @map("operation_type") @db.VarChar(64)
+  requestHash    String            @map("request_hash") @db.VarChar(64)
+  status         IdempotencyStatus
+  responseBody   String?           @map("response_body") @db.Text
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime          @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  @@index([userId], name: "idx_idempotency_user")
+  @@index([status], name: "idx_idempotency_status")
+  @@map("idempotency_records")
+}

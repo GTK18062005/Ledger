@@ -3,9 +3,25 @@ server:
 
 spring:
   application:
-    name: ledgerline-engine
+    name: balancevault-engine
   profiles:
     active: dev
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
 
 logging:
   level:
@@ -18,9 +34,9 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:postgresql://localhost:5432/ledgerline
-    username: postgres
-    password: 1235
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ledgerline}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:1235}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 50

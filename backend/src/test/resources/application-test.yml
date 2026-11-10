@@ -2,6 +2,10 @@ server:
   port: -1
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   datasource:
     url: jdbc:h2:mem:ledgerline_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=30000;DEFAULT_LOCK_TIMEOUT=30000
     username: sa
@@ -21,9 +25,18 @@ spring:
   flyway:
     enabled: false
 
+management:
+  endpoint:
+    health:
+      show-details: always
+
 jwt:
   secret: SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!
   expiration: 86400000
+
+admin:
+  bootstrap:
+    secret: MasterBootstrapSecret123!
 
 logging:
   level:

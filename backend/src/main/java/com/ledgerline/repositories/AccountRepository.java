@@ -19,6 +19,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findByOwnerId(UUID ownerId);
 
+    List<Account> findByOwner(com.ledgerline.models.User owner);
+
     Optional<Account> findByAccountNumber(String accountNumber);
 
     boolean existsByAccountNumber(String accountNumber);

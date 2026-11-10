@@ -205,7 +205,77 @@ Database migrations fail on deployment due to modified checksums of historical m
 
 ---
 
-## Complete Test Execution Matrix (36 / 36 PASSED)
+## 10. High-Frequency Flooding & Distributed Denial of Service (Redis Rate Limiting)
+
+### Threat
+A malicious botnet or runaway microservice floods critical financial endpoints (`/api/transfers`, `/api/deposits`, `/api/withdrawals`) or authentication endpoints (`/api/auth/login`, `/api/auth/register`), causing resource exhaustion, lock starvation, and potential database degradation.
+
+### Mitigation
+1. **Sliding-Window Distributed Rate Limiting:**
+   - Enforced by `RateLimitingFilter` and backed by distributed `RedisTemplate`.
+   - Distinct tiered quota categories per minute window:
+     - `AUTH` endpoints: **15 requests/minute** (brute-force defense).
+     - `FINANCIAL` mutations: **30 requests/minute** (liquidity protection & lock throttling).
+     - `GENERAL` queries: **120 requests/minute** (resource conservation).
+2. **Standardized HTTP 429 Payload & RFC Headers:**
+   - Exceeded quotas return HTTP 429 Too Many Requests.
+   - Emits RFC compliance headers: `Retry-After: <seconds>`, `X-RateLimit-Limit: <limit>`, `X-RateLimit-Remaining: 0`, and `X-RateLimit-Category`.
+3. **Resilient In-Memory Fallback:**
+   - If Redis connection is interrupted, the rate limiter automatically falls back to an atomic in-memory sliding-window bucket without degrading availability or failing open unsafely.
+
+### Verification Tests
+- `RateLimiterTests.testRequestsWithinQuotaAllowed()`: Quota permitted up to tier boundary.
+- `RateLimiterTests.testRequestsExceedingQuotaBlocked()`: Rejection with HTTP 429 and `retryAfterSeconds > 0`.
+- `RateLimiterTests.testClientAndCategoryIsolation()`: Strict quota isolation between IP clients and between endpoint categories.
+
+---
+
+## 11. Production Bootstrap Backdoors & Administrator Hijacking
+
+### Threat
+Attackers exploit insecure seeded demo administrator accounts or unauthenticated registration endpoints to gain root administrative privileges, or an unauthorized party repeatedly invokes bootstrap APIs to overwrite system administrators.
+
+### Mitigation
+1. **Zero-Seeded Admin in Production:**
+   - `DataSeeder` is strictly restricted to `@Profile({"dev", "test"})`. Production environments boot with zero pre-seeded user accounts.
+2. **Master Secret Gated Bootstrap (`ADMIN_BOOTSTRAP_SECRET`):**
+   - First administrator creation requires submitting the cryptographically strong `ADMIN_BOOTSTRAP_SECRET` via `POST /api/admin/bootstrap` or interactive CLI scripts (`bootstrap-admin.bat` / `bootstrap-admin.sh`).
+3. **Atomic Permanent Lockout:**
+   - Once the database registers `countByRole(Role.ADMIN) > 0`, the bootstrap endpoint permanently locks out further calls and throws `UnauthorizedAccessException: Administrator bootstrap is locked`.
+4. **Mandatory Audited Reason for Status Changes:**
+   - When administrators freeze or suspend user accounts, `adminReason` is mandatory and persisted to immutable audit logs.
+
+### Verification Tests
+- `UserOnboardingAndAdminBootstrapTests.testAdminBootstrapCreatesAdmin()`: First admin successfully provisioned using valid secret.
+- `UserOnboardingAndAdminBootstrapTests.testAdminBootstrapBlockedWithInvalidSecret()`: Invalid secret immediately rejected with HTTP 401.
+- `UserOnboardingAndAdminBootstrapTests.testAdminBootstrapBlockedWhenAdminAlreadyExists()`: Second bootstrap attempt permanently blocked with HTTP 401.
+- `UserOnboardingAndAdminBootstrapTests.testAccountStatusChangeRequiresAdminReason()`: Missing admin reason rejected with HTTP 400.
+
+---
+
+## 12. Silent Ledger Drift & Double-Entry Zero-Sum Corruption
+
+### Threat
+A latent calculation defect, unhandled rounding error, or manual DBA tampering silently introduces unbacked balance creation into the system, causing the aggregate net balance across all customer and system clearing accounts to diverge from zero.
+
+### Mitigation
+1. **Automated Spring Actuator Health Indicator (`LedgerIntegrityHealthIndicator`):**
+   - Interrogates `AccountRepository.sumAllBalances()` across all accounts (customer vaults + `ACC-SYSTEM-FUNDING` + `ACC-SYSTEM-SETTLEMENT`).
+   - If $\sum \text{balances} \ne 0$, flags Actuator `/actuator/health` as **DOWN** with `CRITICAL_DRIFT_DETECTED`.
+2. **Public Deployment Health Probe (`/api/health`):**
+   - Returns JSON telemetry including `database: CONNECTED`, `doubleEntryIntegrity: CONSERVED_ZERO_SUM`, and `netSystemBalance: "0.0000 INR"`.
+3. **Database Least-Privilege Architecture (`roles_and_permissions.sql`):**
+   - Explicit PostgreSQL database roles:
+     - `balancevault_app`: DML access with `REVOKE UPDATE, DELETE ON ledger_entries, transactions`.
+     - `balancevault_migrator`: Dedicated DDL execution for Flyway migrations.
+     - `balancevault_auditor`: Strictly read-only `SELECT` access.
+
+### Verification Tests
+- `UserOnboardingAndAdminBootstrapTests.testHealthCheckEndpointReportsUpAndZeroSum()`: Asserts `/api/health` reports HTTP 200, status `UP`, and `CONSERVED_ZERO_SUM`.
+
+---
+
+## Complete Test Execution Matrix (46 / 46 PASSED)
 
 | Suite | Test Name | Target Engine | Threat / Invariant | Status |
 | :--- | :--- | :---: | :--- | :---: |
@@ -239,6 +309,16 @@ Database migrations fail on deployment due to modified checksums of historical m
 | `ProductionRestrictionsTests` | `testCrossCurrencyTransferRejected` | H2 | Threat 8: Cross-Currency Validation | **PASS** |
 | `ProductionRestrictionsTests` | `testSameCurrencyTransferAccepted` | H2 | Threat 8: Same-Currency Continuity | **PASS** |
 | `ProductionRestrictionsTests` | `testActiveAccountOperationsUnaffected` | H2 | Threat 8: Active Account Operational Baseline | **PASS** |
+| `RateLimiterTests` | `testRequestsWithinQuotaAllowed` | In-Memory / Redis | Threat 10: Sliding-Window Quota Conformance | **PASS** |
+| `RateLimiterTests` | `testRequestsExceedingQuotaBlocked` | In-Memory / Redis | Threat 10: 429 Rejection & Retry-After | **PASS** |
+| `RateLimiterTests` | `testClientAndCategoryIsolation` | In-Memory / Redis | Threat 10: Multi-Tenant Category Isolation | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testUserRegistrationProvisionsPrimaryAccount` | H2 | Requirement 1: KYC Onboarding & Auto-Provision | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testAdminBootstrapCreatesAdmin` | H2 | Threat 11: First-Admin Root Provisioning | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testAdminBootstrapBlockedWithInvalidSecret` | H2 | Threat 11: Invalid Secret Rejection | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testAdminBootstrapBlockedWhenAdminAlreadyExists` | H2 | Threat 11: Permanent Lockout Guard | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testAccountStatusChangeRequiresAdminReason` | H2 | Threat 11: Mandatory Audited Reason | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testAccountHolderCanOpenSecondaryAccount` | H2 | Requirement 1: Secondary Currency Vaults | **PASS** |
+| `UserOnboardingAndAdminBootstrapTests` | `testHealthCheckEndpointReportsUpAndZeroSum` | H2 | Threat 12: Deployment Health & Zero-Sum Probe | **PASS** |
 | `PostgreSqlIntegrationTests` | `testFlywayMigrationAppliedOnPostgres` | **PostgreSQL 18** | Threat 9: Flyway Migration Integrity | **PASS** |
 | `PostgreSqlIntegrationTests` | `testPostgreSqlConcurrentWithdrawalsRowLocking` | **PostgreSQL 18** | Threat 1: Native Row Locking & Overdraft Block | **PASS** |
 | `PostgreSqlIntegrationTests` | `testPostgreSqlOppositeDirectionTransfersDeadlockFree` | **PostgreSQL 18** | Threat 7: Native Bidirectional Deadlock Safety | **PASS** |

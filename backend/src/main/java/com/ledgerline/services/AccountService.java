@@ -60,6 +60,51 @@ public class AccountService {
         return mapToResponse(saved);
     }
 
+    @Transactional
+    public AccountResponse openAccountForUser(UUID userId, String currency) {
+        User owner = userRepository.findById(userId)
+                .orElseThrow(() -> new AccountNotFoundException("User not found: " + userId));
+
+        String cleanCurrency = (currency != null && !currency.isBlank()) ? currency.trim().toUpperCase() : "INR";
+        String randomSuffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String accountNumber = "ACC-USR-" + randomSuffix;
+
+        Account account = new Account(accountNumber, owner, BigDecimal.ZERO, cleanCurrency);
+        Account saved = accountRepository.save(account);
+
+        auditService.recordAudit(
+                userId,
+                owner.getRole().name(),
+                "OPEN_ADDITIONAL_ACCOUNT",
+                saved.getAccountNumber(),
+                "SUCCESS",
+                "Opened new account: " + accountNumber + " (" + cleanCurrency + ")"
+        );
+
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public AccountResponse updateAccountStatus(UUID accountId, AccountStatus newStatus, String adminReason, UUID adminId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with ID: " + accountId));
+
+        AccountStatus oldStatus = account.getStatus();
+        account.setStatus(newStatus);
+        Account saved = accountRepository.save(account);
+
+        auditService.recordAudit(
+                adminId,
+                Role.ADMIN.name(),
+                "ACCOUNT_STATUS_CHANGE",
+                saved.getAccountNumber(),
+                "SUCCESS",
+                "Changed account status from " + oldStatus + " to " + newStatus + ". Reason: " + (adminReason != null ? adminReason : "None provided")
+        );
+
+        return mapToResponse(saved);
+    }
+
     @Transactional(readOnly = true)
     public List<AccountResponse> getAccounts(UUID currentUserId, Role currentRole) {
         if (currentRole == Role.ADMIN || currentRole == Role.AUDITOR) {
@@ -115,4 +160,3 @@ public class AccountService {
         );
     }
 }
-

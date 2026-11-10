@@ -4,6 +4,28 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 font-sans selection:bg-sky-500 selection:text-white;
+    @apply bg-obsidian-900 text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Financial tabular numbers for all numerical and balance displays */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom scrollbar for dense ledger tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080D1A;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E2B47;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }

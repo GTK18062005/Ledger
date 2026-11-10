@@ -4,6 +4,7 @@ import com.ledgerline.dto.AccountResponse;
 import com.ledgerline.dto.AggregateBalanceResponse;
 import com.ledgerline.dto.CreateAccountRequest;
 import com.ledgerline.dto.StatementItemResponse;
+import com.ledgerline.dto.UpdateAccountStatusRequest;
 import com.ledgerline.models.Role;
 import com.ledgerline.services.AccountService;
 import com.ledgerline.services.StatementService;
@@ -15,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +47,31 @@ public class AccountController {
             Authentication authentication) {
         AccountResponse response = accountService.createAccount(request, getUserId(authentication));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/open")
+    @PreAuthorize("hasRole('ACCOUNT_HOLDER')")
+    public ResponseEntity<AccountResponse> openAccount(
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication authentication) {
+        String currency = body != null ? body.get("currency") : "INR";
+        AccountResponse response = accountService.openAccountForUser(getUserId(authentication), currency);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AccountResponse> updateAccountStatus(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateAccountStatusRequest request,
+            Authentication authentication) {
+        AccountResponse response = accountService.updateAccountStatus(
+                id,
+                request.getStatus(),
+                request.getAdminReason(),
+                getUserId(authentication)
+        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
@@ -79,4 +106,3 @@ public class AccountController {
         return ResponseEntity.ok(accountService.getAggregateBalances());
     }
 }
-

@@ -5,6 +5,8 @@ import AccountDashboard from './components/AccountDashboard';
 import TransferForm from './components/TransferForm';
 import StatementViewer from './components/StatementViewer';
 import AdminAuditorPanel from './components/AdminAuditorPanel';
+import OnboardingModal from './components/OnboardingModal';
+import BootstrapAdminModal from './components/BootstrapAdminModal';
 import { api, getStoredUser, clearAuth } from './api';
 import { Wallet, ArrowRightLeft, FileText, ShieldAlert, Loader2 } from 'lucide-react';
 
@@ -19,6 +21,10 @@ export default function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [statementLoading, setStatementLoading] = useState(false);
 
+  // Modals
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
+  const [showBootstrapModal, setShowBootstrapModal] = useState(false);
+
   // Initialize session: try stored user or auto-login as Alice (Account Holder)
   useEffect(() => {
     const init = async () => {
@@ -28,7 +34,7 @@ export default function App() {
           setUser(stored);
           await loadAccounts();
         } else {
-          // Default to Alice
+          // Default demo session: Alice
           await handleLogin('alice@ledgerline.io', 'Password123!');
         }
       } catch (e) {
@@ -47,7 +53,9 @@ export default function App() {
       const newUser = {
         userId: res.userId,
         email: res.email,
-        role: res.role
+        role: res.role,
+        primaryAccountId: res.primaryAccountId,
+        primaryAccountNumber: res.primaryAccountNumber
       };
       setUser(newUser);
       await loadAccounts();
@@ -64,7 +72,6 @@ export default function App() {
     setAccounts([]);
     setSelectedAccount(null);
     setStatement([]);
-    // Re-prompt via login as demo
     handleLogin('alice@ledgerline.io', 'Password123!');
   };
 
@@ -104,6 +111,11 @@ export default function App() {
     loadStatement(acc.id);
   };
 
+  const handleSelectAccountForTransfer = (acc) => {
+    setSelectedAccount(acc);
+    setActiveTab('transfer');
+  };
+
   const handleCreateAccount = async (payload) => {
     await api.createAccount(payload);
     await loadAccounts();
@@ -123,10 +135,10 @@ export default function App() {
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="text-center space-y-3">
-          <Loader2 className="w-8 h-8 text-sky-400 animate-spin mx-auto" />
-          <p className="text-xs text-slate-400 font-mono">Initializing LedgerLine Engine...</p>
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
+        <div className="text-center space-y-3 font-mono">
+          <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mx-auto" />
+          <p className="text-xs text-slate-400">Verifying Zero-Sum Invariant & Connecting to Vault...</p>
         </div>
       </div>
     );
@@ -135,11 +147,16 @@ export default function App() {
   const isAdminOrAuditor = user && (user.role === 'ADMIN' || user.role === 'AUDITOR');
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Navbar user={user} onLogout={handleLogout} />
+    <div className="min-h-screen bg-obsidian-950 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
+      <Navbar
+        user={user}
+        onLogout={handleLogout}
+        onOpenOnboardModal={() => setShowOnboardModal(true)}
+        onOpenBootstrapModal={() => setShowBootstrapModal(true)}
+      />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Interactive Persona Switcher */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-6">
+        {/* Interactive Multi-Tenant Persona Switcher */}
         <DemoUserSwitcher
           currentUser={user}
           onSelectUser={handleLogin}
@@ -147,12 +164,12 @@ export default function App() {
         />
 
         {/* Primary View Navigation */}
-        <div className="border-b border-slate-800 flex space-x-6">
+        <div className="border-b border-obsidian-750 flex space-x-6">
           <button
             onClick={() => setActiveTab('accounts')}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
+            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
               activeTab === 'accounts'
-                ? 'border-sky-500 text-sky-400'
+                ? 'border-emerald-500 text-emerald-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -162,14 +179,14 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('transfer')}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
+            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
               activeTab === 'transfer'
-                ? 'border-sky-500 text-sky-400'
+                ? 'border-emerald-500 text-emerald-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <ArrowRightLeft className="w-4 h-4" />
-            <span>Transfers & Movements</span>
+            <span>Financial Mutations</span>
           </button>
 
           <button
@@ -177,27 +194,27 @@ export default function App() {
               setActiveTab('statement');
               if (selectedAccount) loadStatement(selectedAccount.id);
             }}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
+            className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
               activeTab === 'statement'
-                ? 'border-sky-500 text-sky-400'
+                ? 'border-emerald-500 text-emerald-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Statements & Journal</span>
+            <span>Ledger Statements</span>
           </button>
 
           {isAdminOrAuditor && (
             <button
               onClick={() => setActiveTab('audit')}
-              className={`pb-3 text-xs font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
+              className={`pb-3 text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2 border-b-2 transition ${
                 activeTab === 'audit'
-                  ? 'border-sky-500 text-sky-400'
+                  ? 'border-purple-400 text-purple-300'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
               <ShieldAlert className="w-4 h-4" />
-              <span>Security & Audit Trails</span>
+              <span>Compliance & Audit Invariant</span>
             </button>
           )}
         </div>
@@ -208,6 +225,7 @@ export default function App() {
             accounts={accounts}
             user={user}
             onSelectAccountForStatement={handleSelectAccountForStatement}
+            onSelectAccountForTransfer={handleSelectAccountForTransfer}
             onCreateAccount={handleCreateAccount}
             onRefresh={loadAccounts}
             loading={loading}
@@ -240,14 +258,37 @@ export default function App() {
         )}
 
         {activeTab === 'audit' && isAdminOrAuditor && (
-          <AdminAuditorPanel user={user} />
+          <AdminAuditorPanel
+            user={user}
+            accounts={accounts}
+            onRefreshAccounts={loadAccounts}
+          />
         )}
       </main>
 
-      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-400 font-mono">
-        LedgerLine Engine • Mission-Critical Financial Ledger & Transfer Engine • Double-Entry Conservation Enforced
+      {/* Onboarding Dialog */}
+      <OnboardingModal
+        isOpen={showOnboardModal}
+        onClose={() => setShowOnboardModal(false)}
+        onSuccess={async (newUser) => {
+          setShowOnboardModal(false);
+          await loadAccounts();
+        }}
+      />
+
+      {/* First Admin Bootstrap Dialog */}
+      <BootstrapAdminModal
+        isOpen={showBootstrapModal}
+        onClose={() => setShowBootstrapModal(false)}
+        onSuccess={async (adminUser) => {
+          setShowBootstrapModal(false);
+          await handleLogin(adminUser.email, 'AdminSecret123!');
+        }}
+      />
+
+      <footer className="border-t border-obsidian-800 py-6 text-center text-xs text-slate-500 font-mono">
+        BalanceVault Core • PostgreSQL Double-Entry Engine • Redis Sliding-Window Rate Limiting • Zero-Sum Invariant Enforced
       </footer>
     </div>
   );
 }
-

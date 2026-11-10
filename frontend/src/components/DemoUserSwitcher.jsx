@@ -6,37 +6,33 @@ const DEMO_USERS = [
     role: 'ADMIN',
     email: 'admin@ledgerline.io',
     name: 'Admin System',
-    description: 'Create accounts, assign users, view system aggregates & audit logs',
+    description: 'System clearing inspection, account status control & full audit logs',
     icon: Shield,
-    color: 'from-purple-600 to-indigo-600',
-    borderColor: 'border-purple-500/50 hover:border-purple-400'
+    badgeColor: 'text-purple-400 bg-purple-950/40 border-purple-500/30'
   },
   {
     role: 'ACCOUNT_HOLDER',
     email: 'alice@ledgerline.io',
-    name: 'Alice (Holder 1)',
-    description: 'Owns ACC-ALICE-1001 (₹10,000.00). Transfer, deposit, withdraw',
+    name: 'Alice (Account Holder)',
+    description: 'Owns ACC-ALICE-1001. Initiates P2P transfers, deposits & withdrawals',
     icon: User,
-    color: 'from-emerald-600 to-teal-600',
-    borderColor: 'border-emerald-500/50 hover:border-emerald-400'
+    badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30'
   },
   {
     role: 'ACCOUNT_HOLDER',
     email: 'bob@ledgerline.io',
-    name: 'Bob (Holder 2)',
-    description: 'Owns ACC-BOB-2002 (₹5,000.00). Transfer, deposit, withdraw',
+    name: 'Bob (Account Holder)',
+    description: 'Owns ACC-BOB-2002. Counterparty for concurrent money transfers',
     icon: User,
-    color: 'from-sky-600 to-cyan-600',
-    borderColor: 'border-sky-500/50 hover:border-sky-400'
+    badgeColor: 'text-cyan-400 bg-cyan-950/40 border-cyan-500/30'
   },
   {
     role: 'AUDITOR',
     email: 'auditor@ledgerline.io',
-    name: 'Auditor Read-Only',
-    description: 'Strict read-only across all accounts, ledger statements & refusals',
+    name: 'Auditor Compliance',
+    description: 'Strictly read-only inspection of immutable statements & IDOR logs',
     icon: FileText,
-    color: 'from-amber-600 to-orange-600',
-    borderColor: 'border-amber-500/50 hover:border-amber-400'
+    badgeColor: 'text-amber-400 bg-amber-950/40 border-amber-500/30'
   }
 ];
 
@@ -53,23 +49,23 @@ export default function DemoUserSwitcher({ currentUser, onSelectUser, loading })
   };
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 mb-8 shadow-xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+    <div className="bg-obsidian-850/80 border border-obsidian-750 rounded-xl p-4 sm:p-5 mb-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
         <div>
-          <h2 className="text-sm font-semibold text-white flex items-center space-x-2">
-            <KeyRound className="w-4 h-4 text-sky-400" />
-            <span>Interactive Demo Credential Switcher</span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+            <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Interactive Multi-Tenant Personas</span>
           </h2>
-          <p className="text-xs text-slate-400">
-            Switch between authenticated personas to verify Role-Based Access Control and Tenant Isolation.
+          <p className="text-[11px] text-slate-400">
+            Switch between authenticated security contexts to test RBAC, IDOR enforcement, and audit logging.
           </p>
         </div>
-        <div className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
-          Default Password: <span className="text-sky-300">Password123!</span>
+        <div className="text-[11px] font-mono text-slate-400 bg-obsidian-950 px-2.5 py-1 rounded border border-obsidian-750">
+          Demo Pass: <span className="text-emerald-400">Password123!</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {DEMO_USERS.map((demo) => {
           const Icon = demo.icon;
           const isActive = currentUser && currentUser.email === demo.email;
@@ -80,40 +76,42 @@ export default function DemoUserSwitcher({ currentUser, onSelectUser, loading })
               key={demo.email}
               onClick={() => handleSwitch(demo.email)}
               disabled={loading}
-              className={`text-left p-3.5 rounded-xl border transition-all duration-200 relative group ${
+              className={`text-left p-3 rounded-lg border transition-all duration-150 relative ${
                 isActive
-                  ? 'bg-slate-800/90 border-sky-500 shadow-md shadow-sky-500/10 ring-1 ring-sky-500/50'
-                  : `bg-slate-950/40 ${demo.borderColor} hover:bg-slate-800/40`
+                  ? 'bg-obsidian-800 border-emerald-500/80 ring-1 ring-emerald-500/30'
+                  : 'bg-obsidian-900 border-obsidian-750 hover:border-obsidian-700 hover:bg-obsidian-850'
               }`}
             >
               {isActive && (
-                <div className="absolute top-2.5 right-2.5 bg-sky-500 text-white rounded-full p-0.5">
-                  <Check className="w-3 h-3" />
+                <div className="absolute top-2.5 right-2.5 bg-emerald-500 text-obsidian-950 rounded p-0.5">
+                  <Check className="w-3 h-3 stroke-[3]" />
                 </div>
               )}
 
-              <div className="flex items-center space-x-2.5 mb-2">
-                <div className={`w-7 h-7 rounded-lg bg-gradient-to-tr ${demo.color} flex items-center justify-center text-white shadow-sm`}>
+              <div className="flex items-center space-x-2 mb-1.5">
+                <div className="w-6 h-6 rounded bg-obsidian-950 border border-obsidian-750 flex items-center justify-center text-slate-300">
                   {isThisLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                   ) : (
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                   )}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-white tracking-wide">{demo.name}</div>
-                  <div className="text-[10px] text-slate-400 font-mono truncate max-w-[140px]">{demo.email}</div>
+                  <div className="text-xs font-bold text-white tracking-tight">{demo.name}</div>
+                  <div className="text-[10px] text-slate-400 font-mono truncate max-w-[130px]">{demo.email}</div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
+              <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 my-2">
                 {demo.description}
               </p>
 
-              <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
-                <span className="text-slate-400 font-medium">Role: <span className="text-slate-200">{demo.role}</span></span>
-                <span className={`font-semibold ${isActive ? 'text-sky-400' : 'text-slate-400 group-hover:text-slate-300'}`}>
-                  {isActive ? 'Active' : 'Switch →'}
+              <div className="pt-2 border-t border-obsidian-750 flex items-center justify-between text-[10px] font-mono">
+                <span className={`px-1.5 py-0.5 rounded border ${demo.badgeColor}`}>
+                  {demo.role}
+                </span>
+                <span className={isActive ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                  {isActive ? 'Active Context' : 'Switch →'}
                 </span>
               </div>
             </button>

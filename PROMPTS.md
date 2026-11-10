@@ -207,3 +207,92 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`DataSeeder.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/config/DataSeeder.java)
   - [`application.yml`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/resources/application.yml)
 - **Commit Reference:** [`52686a3`](https://github.com/GTK18062005/Ledger/commit/52686a366aeaeca58736267fa6f691d5853aff41)
+
+
+---
+
+## Entry 7: Redis Rate Limiter: Distributed Sliding Window vs. Naive Token Bucket
+
+- **Date:** 2026-11-10 (Morning)
+- **Target Area:** High-Frequency Flooding, Distributed Coordination & Rate Limiting
+- **What was asked for:**  
+  Implement Redis-backed rate limiting to defend financial mutations (`/api/transfers`, `/api/deposits`, `/api/withdrawals`) and authentication endpoints (`/api/auth/login`, `/api/auth/register`) from distributed denial of service and brute-force attacks.
+- **What the tool produced:**  
+  The AI suggested a simple local `ConcurrentHashMap` counter or a fixed 1-minute window key in Redis (`INCR key` followed by `EXPIRE 60`).
+- **What was wrong with it:**  
+  1. **Fixed-Window Burst Vulnerability:** Fixed 60-second window counters permit boundary double-bursts: a client can send 30 requests at minute 0:59 and another 30 requests at minute 1:00, pushing 60 financial writes through the engine in under 2 seconds.
+  2. **Test Fragility:** Directly coupling the Spring context to a required external Redis server caused local unit tests and test suites without live Redis instances to immediately crash on context boot.
+- **What was done instead:**  
+  1. Implemented a sliding-window algorithm in `RateLimiterService` using current-minute epoch window keys with 120s TTL and carry-forward weighting.
+  2. Defined distinct quota categories:
+     - `AUTH`: 15 requests / minute.
+     - `FINANCIAL`: 30 mutations / minute.
+     - `GENERAL`: 120 queries / minute.
+  3. Built an atomic in-memory sliding-window fallback with `ConcurrentHashMap` and `AtomicInteger` that automatically activates when Redis is disconnected or unconfigured, ensuring resilient offline testing while guaranteeing production Redis clustering.
+  4. Registered `RateLimitingFilter` returning standard RFC headers (`Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Category`).
+- **Primary Source Code & Tests:**  
+  - [`RateLimiterService.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/services/RateLimiterService.java)
+  - [`RateLimitingFilter.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/config/RateLimitingFilter.java)
+  - [`RateLimiterTests.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/RateLimiterTests.java)
+- **Commit Reference:** [`27a7561`](https://github.com/GTK18062005/Ledger/commit/27a7561e1b7470fcfd1ae981d368dcf09eec81b5)
+
+---
+
+## Entry 8: Production First-Admin Bootstrap vs. Insecure Seeded Credentials
+
+- **Date:** 2026-11-10 (Midday)
+- **Target Area:** Authorisation, Root Bootstrapping & Secret Hygiene
+- **What was asked for:**  
+  Provide a secure mechanism to bootstrap the initial system administrator in a production environment without relying on pre-seeded demo credentials.
+- **What the tool produced:**  
+  The AI suggested adding an open endpoint `POST /api/users` with an optional `role: "ADMIN"` parameter in the JSON body, or creating an unauthenticated `/api/admin/bootstrap` endpoint that could be invoked at any time.
+- **What was wrong with it:**  
+  **Catastrophic Administrative Hijacking:**  
+  1. An open registration endpoint accepting `role: "ADMIN"` allows any public caller to grant themselves administrative privileges over the financial ledger.
+  2. An unauthenticated bootstrap endpoint without state locking allows any external attacker to invoke the endpoint after deployment and overwrite or mint arbitrary root admin accounts.
+- **What was done instead:**  
+  1. Implemented `AdminBootstrapService` requiring a cryptographically strong `ADMIN_BOOTSTRAP_SECRET` passed in `BootstrapAdminRequest`:
+     ```java
+     if (!bootstrapSecret.equals(expectedSecret)) {
+         throw new UnauthorizedAccessException("Access denied: Invalid administrator bootstrap secret.");
+     }
+     long existingAdmins = userRepository.countByRole(Role.ADMIN);
+     if (existingAdmins > 0) {
+         throw new UnauthorizedAccessException("Administrator bootstrap is locked: an administrator already exists.");
+     }
+     ```
+  2. The moment the first administrator is created in PostgreSQL, the bootstrap mechanism **permanently locks itself out**. Subsequent requests fail with HTTP 401 Unauthorized.
+  3. Created dedicated operational CLI scripts (`bootstrap-admin.bat` and `bootstrap-admin.sh`) that prompt the operator for the bootstrap secret interactively without recording credentials in shell history.
+  4. Added automated verification tests proving that valid secrets succeed, invalid secrets fail, and subsequent bootstrap calls are permanently blocked.
+- **Primary Source Code & Tests:**  
+  - [`AdminBootstrapService.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/services/AdminBootstrapService.java)
+  - [`AdminController.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/AdminController.java)
+  - [`UserOnboardingAndAdminBootstrapTests.java#testAdminBootstrapCreatesAdmin`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/UserOnboardingAndAdminBootstrapTests.java)
+- **Commit Reference:** [`27a7561`](https://github.com/GTK18062005/Ledger/commit/27a7561e1b7470fcfd1ae981d368dcf09eec81b5)
+
+---
+
+## Entry 9: Database Least-Privilege Architecture & Double-Entry Zero-Sum Health Checks
+
+- **Date:** 2026-11-10 (Afternoon)
+- **Target Area:** Least-Privilege Security, Actuator Health & Invariant Verification
+- **What was asked for:**  
+  Add database roles and deployment health checks to verify production readiness.
+- **What the tool produced:**  
+  The AI configured Spring Boot Actuator's default health check (`/actuator/health`) which only pings the database connection and reports `UP` as long as `SELECT 1` succeeds, and recommended having the application run under the PostgreSQL `postgres` superuser.
+- **What was wrong with it:**  
+  1. **Blind Health Probes:** A standard `SELECT 1` ping tells the orchestrator nothing about accounting integrity. If a software bug or database corruption occurs where customer balances sum to ₹50,000,000 but system clearing accounts sum to -₹10,000,000 (a massive ₹40,000,000 ledger drift), standard Actuator still happily reports `UP`!
+  2. **Excessive DB Privileges:** Running as `postgres` superuser allows the application to execute DDL statements at runtime and bypass `REVOKE UPDATE, DELETE` table immutability rules.
+- **What was done instead:**  
+  1. Authored `db/roles_and_permissions.sql` defining three strictly isolated PostgreSQL database roles:
+     - `balancevault_migrator`: Dedicated role for Flyway DDL executions during CI/CD.
+     - `balancevault_app`: Minimal runtime DML role (`SELECT, INSERT` on all tables, `UPDATE` only on `accounts.balance/status` and `idempotency_records`), with explicit `REVOKE UPDATE, DELETE ON ledger_entries, transactions`.
+     - `balancevault_auditor`: Strictly read-only `SELECT` role for compliance inspection.
+  2. Implemented custom `LedgerIntegrityHealthIndicator` and public `/api/health` probe that dynamically query `AccountRepository.sumAllBalances()`.
+  3. If $\sum \text{balances} \ne 0.0000$, the health indicator flags the system status as **DOWN** with `CRITICAL_DRIFT_DETECTED`, instantly alerting Kubernetes or Docker Swarm load balancers to halt traffic before financial damage spreads.
+- **Primary Source Code & Tests:**  
+  - [`LedgerIntegrityHealthIndicator.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/health/LedgerIntegrityHealthIndicator.java)
+  - [`HealthCheckController.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/HealthCheckController.java)
+  - [`backend/src/main/resources/db/roles_and_permissions.sql`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/resources/db/roles_and_permissions.sql)
+  - [`UserOnboardingAndAdminBootstrapTests.java#testHealthCheckEndpointReportsUpAndZeroSum`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/UserOnboardingAndAdminBootstrapTests.java)
+- **Commit Reference:** [`27a7561`](https://github.com/GTK18062005/Ledger/commit/27a7561e1b7470fcfd1ae981d368dcf09eec81b5)
