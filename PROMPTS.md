@@ -296,3 +296,34 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`backend/src/main/resources/db/roles_and_permissions.sql`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/resources/db/roles_and_permissions.sql)
   - [`UserOnboardingAndAdminBootstrapTests.java#testHealthCheckEndpointReportsUpAndZeroSum`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/UserOnboardingAndAdminBootstrapTests.java)
 - **Commit Reference:** [`27a7561`](https://github.com/GTK18062005/Ledger/commit/27a7561e1b7470fcfd1ae981d368dcf09eec81b5)
+
+---
+
+## Entry 10: Authorisation Boundaries, Double-Entry Treasury Credit & Statement Pagination
+
+- **Date:** 2026-11-10 (Late Evening)
+- **Target Area:** Authorisation Boundaries, Double-Entry Treasury Credit & Statement Pagination
+- **What was asked for:**  
+  Add pagination to statements and audit logs, allow the administrator to add money directly to different accounts, and cleanly separate the login page from the dashboard.
+- **What the tool produced:**  
+  The AI attempted to let administrators deposit funds by using an endpoint that bypassed double-entry checks or directly altered account balances in the database. For pagination, it sliced lists without preserving zero-sum ledger audit guarantees or broke backward compatibility with the existing Statement API. For the login page, it embedded a modal that auto-logged into Alice's account whenever credentials expired or were unset.
+- **What was wrong with it:**  
+  1. **Direct Balance Tampering & Ledger Invariant Breach:** Directly updating an account's balance without equal and offsetting ledger entries against an external clearing account (`ACC-SYSTEM-FUNDING`) breaks the fundamental accounting equation $\sum \text{Debits} = \sum \text{Credits}$, causing `LedgerIntegrityHealthIndicator` to fail and health probes to trip `DOWN`.
+  2. **Authorisation & IDOR Violation:** Normal customer deposit endpoints enforce customer ownership (blocking users from depositing to accounts they don't own). An admin funding mechanism requires a dedicated, audited administrative treasury pathway while strictly enforcing double-entry postings (DEBIT: `SYSTEM_FUNDING`, CREDIT: Customer Account).
+  3. **Broken Statement API Contracts:** Naively altering the statement return structure broke unpaginated integration tests and downstream auditors.
+- **What was done instead:**  
+  1. Extended `AdminController` with `@PostMapping("/deposits")` restricted to `hasRole('ADMIN')`, coordinating through `IdempotencyService` and delegating to `DepositService.deposit(...)`. Also updated `TransferController.java` deposit mapping to `hasAnyRole('ACCOUNT_HOLDER', 'ADMIN')`.
+  2. Maintained strict double-entry invariants: every admin treasury deposit atomically debits `ACC-SYSTEM-FUNDING` and credits the target customer account, creating immutable `LedgerEntry` postings and recording an audit event under `ROLE_ADMIN`.
+  3. Implemented overloaded `StatementService.getStatement(...)` supporting optional `page` and `size` parameters with boundary clamping, preserving 100% backward compatibility with unpaginated callers.
+  4. Built clean React pagination UI in `StatementViewer.jsx` and `AdminAuditorPanel.jsx` with page size selection (`[5, 10, 20, 50]`) and navigation controls.
+  5. Isolated the unauthenticated state into a dedicated `LoginPage.jsx` component with 1-click persona switching (Alice, Bob, Admin, Auditor) and removed all silent auto-login fallbacks.
+- **Primary Source Code & Tests:**  
+  - [`AdminController.java#adminDeposit`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/AdminController.java)
+  - [`TransferController.java#deposit`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/TransferController.java)
+  - [`StatementService.java#getStatement`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/services/StatementService.java)
+  - [`LoginPage.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/LoginPage.jsx)
+  - [`StatementViewer.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/StatementViewer.jsx)
+  - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
+  - [`FinancialAndSecurityTests.java#testAdminCanAddMoneyToDifferentAccountsAndMaintainDoubleEntryBalance`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/FinancialAndSecurityTests.java)
+  - [`FinancialAndSecurityTests.java#testStatementServicePagination`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/FinancialAndSecurityTests.java)
+

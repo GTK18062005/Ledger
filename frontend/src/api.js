@@ -154,7 +154,13 @@ export const api = {
     body: JSON.stringify({ status, adminReason })
   }),
 
-  getStatement: (accountId) => request(`/accounts/${accountId}/statement`),
+  getStatement: (accountId, page, size) => {
+    let url = `/accounts/${accountId}/statement`;
+    if (page !== undefined && size !== undefined) {
+      url += `?page=${page}&size=${size}`;
+    }
+    return request(url);
+  },
 
   getAggregateBalance: () => request('/accounts/aggregate'),
 
@@ -185,6 +191,14 @@ export const api = {
 
   // Admin & Auditor
   getAdminUsers: () => request('/admin/users'),
+
+  adminDeposit: (data, idempotencyKey) => request('/admin/deposits', {
+    method: 'POST',
+    headers: {
+      'Idempotency-Key': idempotencyKey || generateUUID()
+    },
+    body: JSON.stringify(data)
+  }),
 
   getAuditLogs: () => request('/audit-logs'),
 

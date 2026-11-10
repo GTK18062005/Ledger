@@ -102,7 +102,7 @@ public class TransferController {
     }
 
     @PostMapping("/deposits")
-    @PreAuthorize("hasRole('ACCOUNT_HOLDER')")
+    @PreAuthorize("hasAnyRole('ACCOUNT_HOLDER', 'ADMIN')")
     public ResponseEntity<TransactionResponse> deposit(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody DepositRequest request,

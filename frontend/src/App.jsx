@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import LoginPage from './components/LoginPage';
 import DemoUserSwitcher from './components/DemoUserSwitcher';
 import AccountDashboard from './components/AccountDashboard';
 import TransferForm from './components/TransferForm';
@@ -15,7 +16,7 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [statement, setStatement] = useState([]);
-  const [activeTab, setActiveTab] = useState('transfer'); // default directly to easy P2P Transfer!
+  const [activeTab, setActiveTab] = useState('transfer'); // default to P2P Transfer
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -25,7 +26,7 @@ export default function App() {
   const [showOnboardModal, setShowOnboardModal] = useState(false);
   const [showBootstrapModal, setShowBootstrapModal] = useState(false);
 
-  // Initialize session: try stored user or auto-login as Alice (Account Holder)
+  // Initialize session: check stored user token; if not present, show LoginPage
   useEffect(() => {
     const init = async () => {
       try {
@@ -33,9 +34,6 @@ export default function App() {
         if (stored) {
           setUser(stored);
           await loadAccounts();
-        } else {
-          // Default demo session: Alice
-          await handleLogin('alice@ledgerline.io', 'Password123!');
         }
       } catch (e) {
         console.error("Initialization error:", e);
@@ -59,8 +57,9 @@ export default function App() {
       };
       setUser(newUser);
       await loadAccounts();
+      return res;
     } catch (err) {
-      alert("Login failed: " + (err.message || "Invalid credentials"));
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -72,15 +71,14 @@ export default function App() {
     setAccounts([]);
     setSelectedAccount(null);
     setStatement([]);
-    handleLogin('alice@ledgerline.io', 'Password123!');
   };
 
   const loadAccounts = async () => {
     setLoading(true);
     try {
       const data = await api.getAccounts();
-      setAccounts(data);
-      if (data.length > 0) {
+      setAccounts(data || []);
+      if (data && data.length > 0) {
         setSelectedAccount(data[0]);
       } else {
         setSelectedAccount(null);
@@ -96,7 +94,7 @@ export default function App() {
     setStatementLoading(true);
     try {
       const data = await api.getStatement(accountId);
-      setStatement(data);
+      setStatement(data || []);
     } catch (e) {
       console.error("Failed to load statement:", e);
       setStatement([]);
@@ -144,6 +142,45 @@ export default function App() {
     );
   }
 
+  // IF USER IS NOT LOGGED IN: SHOW DEDICATED LOGIN PAGE
+  if (!user) {
+    return (
+      <>
+        <LoginPage
+          onLogin={handleLogin}
+          loading={loading}
+          onOpenOnboardModal={() => setShowOnboardModal(true)}
+          onOpenBootstrapModal={() => setShowBootstrapModal(true)}
+        />
+
+        {/* Onboarding Dialog */}
+        <OnboardingModal
+          isOpen={showOnboardModal}
+          onClose={() => setShowOnboardModal(false)}
+          onSuccess={async (newUser) => {
+            setShowOnboardModal(false);
+            if (newUser && newUser.email) {
+              await handleLogin(newUser.email, 'Password123!');
+            }
+          }}
+        />
+
+        {/* First Admin Bootstrap Dialog */}
+        <BootstrapAdminModal
+          isOpen={showBootstrapModal}
+          onClose={() => setShowBootstrapModal(false)}
+          onSuccess={async (adminUser) => {
+            setShowBootstrapModal(false);
+            if (adminUser && adminUser.email) {
+              await handleLogin(adminUser.email, 'AdminSecret123!');
+            }
+          }}
+        />
+      </>
+    );
+  }
+
+  // IF USER IS LOGGED IN: SHOW DASHBOARD
   const isAdminOrAuditor = user && (user.role === 'ADMIN' || user.role === 'AUDITOR');
 
   return (
@@ -282,7 +319,7 @@ export default function App() {
         onClose={() => setShowBootstrapModal(false)}
         onSuccess={async (adminUser) => {
           setShowBootstrapModal(false);
-          await handleLogin(adminUser.email, 'AdminSecret123!');
+          await loadAccounts();
         }}
       />
 

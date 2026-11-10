@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, BarChart3, Search, RefreshCw, AlertTriangle, CheckCircle, Lock, Eye, Users, Shield, AlertOctagon, Edit3 } from 'lucide-react';
+import { 
+  ShieldAlert, BarChart3, Search, RefreshCw, AlertTriangle, CheckCircle, 
+  Lock, Eye, Users, Shield, AlertOctagon, Edit3, PlusCircle, Coins, 
+  ArrowRight, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2 
+} from 'lucide-react';
 import { api } from '../api';
 
 export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts }) {
@@ -15,6 +19,17 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
   const [adminReason, setAdminReason] = useState('');
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
+
+  // Admin Add Money / Deposit state
+  const [depositTarget, setDepositTarget] = useState('');
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositDescription, setDepositDescription] = useState('Admin Treasury Liquidity Injection');
+  const [depositSubmitting, setDepositSubmitting] = useState(false);
+  const [depositMessage, setDepositMessage] = useState(null);
+
+  // Audit Log Pagination state
+  const [logPage, setLogPage] = useState(1);
+  const [logPageSize, setLogPageSize] = useState(10);
 
   const loadData = async () => {
     setLoading(true);
@@ -43,6 +58,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
     loadData();
   }, [user]);
 
+  useEffect(() => {
+    setLogPage(1);
+  }, [searchTerm, logPageSize]);
+
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
     if (!selectedAccForStatus || !adminReason.trim()) return;
@@ -54,8 +73,8 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       setStatusMessage({ type: 'success', text: `Account status successfully updated to ${newStatus}. Audited.` });
       setSelectedAccForStatus(null);
       setAdminReason('');
-      if (onRefreshAccounts) onRefreshAccounts();
-      loadData();
+      if (onRefreshAccounts) await onRefreshAccounts();
+      await loadData();
     } catch (err) {
       setStatusMessage({ type: 'error', text: err.message || 'Failed to update account status' });
     } finally {
@@ -63,15 +82,52 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
     }
   };
 
+  const handleAdminDeposit = async (e) => {
+    e.preventDefault();
+    if (!depositTarget.trim() || !depositAmount || parseFloat(depositAmount) <= 0) {
+      setDepositMessage({ type: 'error', text: 'Please specify a target account and a valid positive amount.' });
+      return;
+    }
+
+    setDepositSubmitting(true);
+    setDepositMessage(null);
+    try {
+      const payload = {
+        accountIdentifier: depositTarget.trim(),
+        amount: parseFloat(depositAmount),
+        description: depositDescription.trim() || 'Admin Treasury Credit'
+      };
+      const res = await api.adminDeposit(payload);
+      setDepositMessage({
+        type: 'success',
+        text: `Successfully added ₹${parseFloat(depositAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} to ${depositTarget}. Double-entry balanced via SYSTEM_FUNDING.`
+      });
+      setDepositAmount('');
+      if (onRefreshAccounts) await onRefreshAccounts();
+      await loadData();
+    } catch (err) {
+      setDepositMessage({ type: 'error', text: err.message || 'Failed to deposit funds' });
+    } finally {
+      setDepositSubmitting(false);
+    }
+  };
+
   const formatBalance = (val, currency = 'INR') => {
     const num = parseFloat(val) || 0;
-    return `${num.toLocaleString('en-IN', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ${currency}`;
+    return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   };
 
   const filteredLogs = auditLogs.filter(l => {
     const text = `${l.action || l.operationType} ${l.status} ${l.resource || l.accountNumber} ${l.details} ${l.userRole}`.toLowerCase();
     return text.includes(searchTerm.toLowerCase());
   });
+
+  const totalLogs = filteredLogs.length;
+  const totalLogPages = Math.max(1, Math.ceil(totalLogs / logPageSize));
+  const validLogPage = Math.min(logPage, totalLogPages);
+  const startLogIndex = (validLogPage - 1) * logPageSize;
+  const endLogIndex = Math.min(startLogIndex + logPageSize, totalLogs);
+  const paginatedLogs = filteredLogs.slice(startLogIndex, endLogIndex);
 
   return (
     <div className="space-y-6">
@@ -117,6 +173,148 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
         </div>
       </div>
 
+      {/* ADMIN FEATURE: ADD MONEY / DEPOSIT FOR DIFFERENT ACCOUNTS */}
+      {user.role === 'ADMIN' && (
+        <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-obsidian-750 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                <Coins className="w-4 h-4 text-emerald-400" />
+                <span>Admin Treasury Credit: Add Money to Any Account</span>
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">
+                Inject liquidity directly into any account. Debits SYSTEM_FUNDING and credits target account (double-entry balanced).
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 w-max">
+              ADMIN ONLY
+            </span>
+          </div>
+
+          {depositMessage && (
+            <div className={`p-3 rounded-lg text-xs font-mono flex items-start space-x-2 ${
+              depositMessage.type === 'success'
+                ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30'
+                : 'bg-rose-950/40 text-rose-300 border border-rose-500/30'
+            }`}>
+              {depositMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+              )}
+              <span>{depositMessage.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAdminDeposit} className="space-y-4">
+            {/* Target Account Input & Quick Select Chips */}
+            <div>
+              <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+                Target Account ID or Account Number
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ACC-BOB-2002 or UUID"
+                  value={depositTarget}
+                  onChange={(e) => setDepositTarget(e.target.value)}
+                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono transition"
+                />
+              </div>
+
+              {/* Quick Account Chips */}
+              {accounts.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] text-slate-500 font-mono">Quick select:</span>
+                  {accounts.map(acc => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => setDepositTarget(acc.accountNumber || acc.id)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition ${
+                        depositTarget === acc.accountNumber || depositTarget === acc.id
+                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500'
+                          : 'bg-obsidian-950 text-slate-400 hover:text-slate-200 border-obsidian-800 hover:border-obsidian-700'
+                      }`}
+                    >
+                      {acc.accountNumber} ({formatBalance(acc.balance)})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Amount Input & Preset Chips */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+                  Deposit Amount (₹ INR)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-xs font-mono text-slate-500">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="0.00"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg pl-7 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono transition"
+                  />
+                </div>
+
+                {/* Amount quick chips */}
+                <div className="flex items-center space-x-1.5 mt-1.5">
+                  {[100, 500, 1000, 5000].map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setDepositAmount(amt.toString())}
+                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-obsidian-950 hover:bg-obsidian-900 border border-obsidian-800 text-slate-300 hover:text-white transition"
+                    >
+                      +₹{amt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
+                  Reason / Audit Memo
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Liquidity seeding or approved credit"
+                  value={depositDescription}
+                  onChange={(e) => setDepositDescription(e.target.value)}
+                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono transition"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={depositSubmitting || !depositTarget.trim() || !depositAmount}
+              className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-950 disabled:text-slate-600 disabled:cursor-not-allowed text-white text-xs font-mono font-bold rounded-lg shadow-sm transition flex items-center space-x-2"
+            >
+              {depositSubmitting ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <span>Processing Double-Entry Deposit...</span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Add Money to Account</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      )}
+
       {/* Account Status Control (Admin Only) */}
       {user.role === 'ADMIN' && accounts.length > 0 && (
         <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl p-5 shadow-sm space-y-4">
@@ -153,7 +351,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                     {acc.accountNumber}
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono">
-                    {acc.ownerEmail || 'System Entity'}
+                    {acc.ownerEmail || 'System Entity'} • {formatBalance(acc.balance)}
                   </div>
                   <span className={`inline-block mt-1 text-[9px] font-mono px-1.5 py-0.2 rounded border ${
                     acc.status === 'ACTIVE'
@@ -240,7 +438,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
         </div>
       )}
 
-      {/* Audit Log Table */}
+      {/* Audit Log Table with Pagination */}
       <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-obsidian-750">
           <div>
@@ -276,70 +474,145 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           </div>
         </div>
 
-        {filteredLogs.length === 0 ? (
+        {/* Audit Log Filter / Page Size row */}
+        <div className="flex items-center justify-between font-mono text-xs text-slate-400">
+          <div className="text-[11px]">
+            Total Records: <span className="font-bold text-slate-200">{totalLogs}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>Per page:</span>
+            <select
+              value={logPageSize}
+              onChange={(e) => setLogPageSize(Number(e.target.value))}
+              className="bg-obsidian-950 border border-obsidian-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+
+        {totalLogs === 0 ? (
           <div className="text-center py-12 text-slate-500 text-xs font-mono bg-obsidian-950/40 rounded-lg border border-obsidian-800">
             No audit records match the current filter.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-obsidian-750 bg-obsidian-950">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-obsidian-900/90 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-obsidian-750">
-                <tr>
-                  <th className="px-4 py-3">Timestamp</th>
-                  <th className="px-4 py-3">Operation</th>
-                  <th className="px-4 py-3">Target Account / Resource</th>
-                  <th className="px-4 py-3">Security Role</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Audit Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-obsidian-800/80 font-mono text-[11px]">
-                {filteredLogs.map((log, idx) => {
-                  const isViolation = log.status === 'FAILED' || log.status === 'REFUSED' || (log.action && log.action.includes('REFUSAL'));
+          <div className="space-y-3">
+            <div className="overflow-x-auto rounded-lg border border-obsidian-750 bg-obsidian-950">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-obsidian-900/90 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-obsidian-750">
+                  <tr>
+                    <th className="px-4 py-3">Timestamp</th>
+                    <th className="px-4 py-3">Operation</th>
+                    <th className="px-4 py-3">Target Account / Resource</th>
+                    <th className="px-4 py-3">Security Role</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Audit Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-obsidian-800/80 font-mono text-[11px]">
+                  {paginatedLogs.map((log, idx) => {
+                    const isViolation = log.status === 'FAILED' || log.status === 'REFUSED' || (log.action && log.action.includes('REFUSAL'));
 
-                  return (
-                    <tr
-                      key={log.id || idx}
-                      className={`hover:bg-obsidian-850/60 transition ${isViolation ? 'bg-amber-950/10' : ''}`}
-                    >
-                      <td className="px-4 py-2.5 whitespace-nowrap text-slate-400 text-[10px]">
-                        {new Date(log.timestamp || log.createdAt).toLocaleString()}
-                      </td>
+                    return (
+                      <tr
+                        key={log.id || idx}
+                        className={`hover:bg-obsidian-850/60 transition ${isViolation ? 'bg-amber-950/10' : ''}`}
+                      >
+                        <td className="px-4 py-2.5 whitespace-nowrap text-slate-400 text-[10px]">
+                          {new Date(log.timestamp || log.createdAt).toLocaleString()}
+                        </td>
 
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="text-white font-semibold">
-                          {log.action || log.operationType}
-                        </span>
-                      </td>
+                        <td className="px-4 py-2.5 whitespace-nowrap">
+                          <span className="text-white font-semibold">
+                            {log.action || log.operationType}
+                          </span>
+                        </td>
 
-                      <td className="px-4 py-2.5 whitespace-nowrap text-slate-300">
-                        {log.resource || log.accountNumber || '—'}
-                      </td>
+                        <td className="px-4 py-2.5 whitespace-nowrap text-slate-300">
+                          {log.resource || log.accountNumber || '—'}
+                        </td>
 
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-obsidian-900 border border-obsidian-800 text-slate-300">
-                          {log.userRole || 'ANONYMOUS'}
-                        </span>
-                      </td>
+                        <td className="px-4 py-2.5 whitespace-nowrap">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-obsidian-900 border border-obsidian-800 text-slate-300">
+                            {log.userRole || 'ANONYMOUS'}
+                          </span>
+                        </td>
 
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          isViolation
-                            ? 'bg-amber-950/60 text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
-                        }`}>
-                          {log.status}
-                        </span>
-                      </td>
+                        <td className="px-4 py-2.5 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            isViolation
+                              ? 'bg-amber-950/60 text-amber-400 border border-amber-500/30'
+                              : 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
+                          }`}>
+                            {log.status}
+                          </span>
+                        </td>
 
-                      <td className="px-4 py-2.5 text-slate-400 max-w-sm truncate">
-                        {log.details || log.failureReason || '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <td className="px-4 py-2.5 text-slate-400 max-w-sm truncate">
+                          {log.details || log.failureReason || '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Audit Log Pagination Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 font-mono text-xs">
+              <div className="text-slate-400 text-[11px]">
+                Showing <span className="font-bold text-slate-200">{startLogIndex + 1}</span> to <span className="font-bold text-slate-200">{endLogIndex}</span> of <span className="font-bold text-slate-200">{totalLogs}</span> audit logs
+              </div>
+
+              <div className="flex items-center space-x-1">
+                <button
+                  type="button"
+                  onClick={() => setLogPage(1)}
+                  disabled={validLogPage === 1}
+                  className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
+                  title="First Page"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLogPage(prev => Math.max(1, prev - 1))}
+                  disabled={validLogPage === 1}
+                  className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <span className="px-3 py-1 text-slate-300 bg-obsidian-950 border border-obsidian-750 rounded text-xs font-bold">
+                  Page {validLogPage} of {totalLogPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setLogPage(prev => Math.min(totalLogPages, prev + 1))}
+                  disabled={validLogPage === totalLogPages}
+                  className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLogPage(totalLogPages)}
+                  disabled={validLogPage === totalLogPages}
+                  className="p-1 rounded bg-obsidian-900 border border-obsidian-750 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-obsidian-800 transition"
+                  title="Last Page"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -91,11 +91,15 @@ public class AccountController {
     @GetMapping("/{id}/statement")
     public ResponseEntity<List<StatementItemResponse>> getStatement(
             @PathVariable("id") UUID id,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
             Authentication authentication) {
         List<StatementItemResponse> statement = statementService.getStatement(
                 id,
                 getUserId(authentication),
-                getUserRole(authentication)
+                getUserRole(authentication),
+                page,
+                size
         );
         return ResponseEntity.ok(statement);
     }

@@ -47,6 +47,11 @@ public class StatementService {
 
     @Transactional(readOnly = true)
     public List<StatementItemResponse> getStatement(UUID accountId, UUID currentUserId, Role currentRole) {
+        return getStatement(accountId, currentUserId, currentRole, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StatementItemResponse> getStatement(UUID accountId, UUID currentUserId, Role currentRole, Integer page, Integer size) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
 
@@ -108,6 +113,13 @@ public class StatementService {
         }
 
         items.sort(Comparator.comparing(StatementItemResponse::getTimestamp).reversed());
+
+        if (page != null && size != null && page >= 0 && size > 0) {
+            int fromIndex = Math.min(page * size, items.size());
+            int toIndex = Math.min(fromIndex + size, items.size());
+            return new ArrayList<>(items.subList(fromIndex, toIndex));
+        }
+
         return items;
     }
 }

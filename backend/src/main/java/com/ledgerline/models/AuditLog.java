@@ -116,6 +116,14 @@ public class AuditLog {
         this.operationType = operationType;
     }
 
+    public String getAction() {
+        return operationType;
+    }
+
+    public void setAction(String action) {
+        this.operationType = action;
+    }
+
     public String getResource() {
         return resource;
     }

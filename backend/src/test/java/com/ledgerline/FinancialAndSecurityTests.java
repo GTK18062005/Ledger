@@ -75,6 +75,9 @@ public class FinancialAndSecurityTests {
     private com.ledgerline.repositories.IdempotencyRecordRepository idempotencyRecordRepository;
 
     @Autowired
+    private com.ledgerline.services.StatementService statementService;
+
+    @Autowired
     private IdempotencyService idempotencyService;
 
     private User customerUser;
@@ -483,5 +486,95 @@ public class FinancialAndSecurityTests {
         Account bobAfter2 = accountRepository.findById(bob.getId()).orElseThrow();
         assertEquals(0, new BigDecimal("800.00").compareTo(aliceAfter2.getBalance()));
         assertEquals(0, new BigDecimal("400.00").compareTo(bobAfter2.getBalance()));
+    }
+
+    @Test
+    @DisplayName("ADMIN-DEP-1. System Administrator can add money to any customer account maintaining double-entry balance")
+    public void testAdminCanAddMoneyToDifferentAccountsAndMaintainDoubleEntryBalance() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Account customerAcc = accountRepository.save(new Account("ACC-CUST-" + suffix, customerUser, new BigDecimal("100.00"), "INR"));
+
+        UsernamePasswordAuthenticationToken adminAuth = new UsernamePasswordAuthenticationToken(
+                adminUser.getId(), null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(adminAuth);
+
+        BigDecimal depositAmount = new BigDecimal("750.00");
+        DepositRequest req = new DepositRequest();
+        req.setAccountIdentifier(customerAcc.getAccountNumber());
+        req.setAmount(depositAmount);
+        req.setDescription("Admin Treasury Liquidity Injection");
+
+        ResponseEntity<TransactionResponse> res = transferController.deposit(
+                "ADMIN-DEP-KEY-" + suffix, req, adminAuth
+        );
+
+        assertNotNull(res.getBody());
+        assertEquals(TransactionStatus.COMPLETED, res.getBody().getStatus());
+        assertEquals(0, depositAmount.compareTo(res.getBody().getAmount()));
+
+        // Customer balance increased by ₹750 (100 -> 850)
+        Account updatedAcc = accountRepository.findById(customerAcc.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("850.00").compareTo(updatedAcc.getBalance()));
+
+        // Double-entry entries created
+        List<LedgerEntry> entries = ledgerEntryRepository.findStatementEntriesByAccountId(customerAcc.getId());
+        assertFalse(entries.isEmpty());
+        LedgerEntry latest = entries.get(entries.size() - 1);
+        assertEquals(EntryType.CREDIT, latest.getEntryType());
+        assertEquals(0, depositAmount.compareTo(latest.getAmount()));
+        assertEquals(0, new BigDecimal("850.00").compareTo(latest.getRunningBalanceAfter()));
+
+        // Verify audit log recorded under ADMIN
+        List<AuditLog> logs = auditLogRepository.findAll();
+        boolean foundAudit = logs.stream().anyMatch(l ->
+                "DEPOSIT_COMPLETED".equals(l.getOperationType()) &&
+                customerAcc.getAccountNumber().equals(l.getResource()) &&
+                "ADMIN".equals(l.getUserRole())
+        );
+        assertTrue(foundAudit, "Admin deposit must be recorded in audit log with role ADMIN");
+    }
+
+    @Test
+    @DisplayName("PAGINATION-1. StatementService correctly paginates ledger entries")
+    public void testStatementServicePagination() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Account acc = accountRepository.save(new Account("ACC-PAGE-" + suffix, customerUser, BigDecimal.ZERO, "INR"));
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                customerUser.getId(), null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ACCOUNT_HOLDER"))
+        );
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+
+        // Perform 5 successive deposits
+        for (int i = 1; i <= 5; i++) {
+            DepositRequest dep = new DepositRequest(acc.getId(), new BigDecimal(i * 10 + ".00"), "Deposit #" + i);
+            depositService.deposit(dep, "DEP-PAGE-" + suffix + "-" + i, customerUser.getId());
+        }
+
+        // 1. Fetch full statement without pagination
+        List<com.ledgerline.dto.StatementItemResponse> fullStatement =
+                statementService.getStatement(acc.getId(), customerUser.getId(), Role.ACCOUNT_HOLDER);
+        assertEquals(5, fullStatement.size());
+
+        // 2. Page 0, Size 2 -> returns 2 most recent items
+        List<com.ledgerline.dto.StatementItemResponse> page0 =
+                statementService.getStatement(acc.getId(), customerUser.getId(), Role.ACCOUNT_HOLDER, 0, 2);
+        assertEquals(2, page0.size());
+        assertEquals(fullStatement.get(0).getId(), page0.get(0).getId());
+        assertEquals(fullStatement.get(1).getId(), page0.get(1).getId());
+
+        // 3. Page 1, Size 2 -> returns next 2 items
+        List<com.ledgerline.dto.StatementItemResponse> page1 =
+                statementService.getStatement(acc.getId(), customerUser.getId(), Role.ACCOUNT_HOLDER, 1, 2);
+        assertEquals(2, page1.size());
+        assertEquals(fullStatement.get(2).getId(), page1.get(0).getId());
+        assertEquals(fullStatement.get(3).getId(), page1.get(1).getId());
+
+        // 4. Page 2, Size 2 -> returns 5th item
+        List<com.ledgerline.dto.StatementItemResponse> page2 =
+                statementService.getStatement(acc.getId(), customerUser.getId(), Role.ACCOUNT_HOLDER, 2, 2);
+        assertEquals(1, page2.size());
+        assertEquals(fullStatement.get(4).getId(), page2.get(0).getId());
     }
 }
