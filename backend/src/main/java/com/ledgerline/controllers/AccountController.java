@@ -59,7 +59,7 @@ public class AccountController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.POST, RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AccountResponse> updateAccountStatus(
             @PathVariable("id") UUID id,

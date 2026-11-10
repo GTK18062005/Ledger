@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wallet, PlusCircle, Eye, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownLeft, Shield, CheckCircle, Plus } from 'lucide-react';
+import { Wallet, PlusCircle, Eye, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownLeft, Shield, CheckCircle, Plus, Search, X } from 'lucide-react';
 import { api } from '../api';
 
 export default function AccountDashboard({
@@ -14,6 +14,10 @@ export default function AccountDashboard({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showOpenSecondaryModal, setShowOpenSecondaryModal] = useState(false);
   
+  // Search and filter state
+  const [accountSearch, setAccountSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
   // Secondary account state
   const [secondaryCurrency, setSecondaryCurrency] = useState('USD');
   const [secondarySubmitting, setSecondarySubmitting] = useState(false);
@@ -85,6 +89,18 @@ export default function AccountDashboard({
     .filter(a => a.currency === 'INR')
     .reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
 
+  const filteredAccounts = (accounts || []).filter(acc => {
+    if (statusFilter !== 'ALL' && acc.status !== statusFilter) return false;
+    if (!accountSearch.trim()) return true;
+    const q = accountSearch.toLowerCase();
+    const accNum = (acc.accountNumber || '').toLowerCase();
+    const owner = (acc.ownerEmail || acc.ownerId || '').toLowerCase();
+    const curr = (acc.currency || '').toLowerCase();
+    const status = (acc.status || '').toLowerCase();
+    const id = (acc.id || '').toLowerCase();
+    return accNum.includes(q) || owner.includes(q) || curr.includes(q) || status.includes(q) || id.includes(q);
+  });
+
   return (
     <div className="space-y-6">
       {/* Overview Banner */}
@@ -135,15 +151,76 @@ export default function AccountDashboard({
         </div>
       </div>
 
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-obsidian-850/80 border border-obsidian-750 p-3 sm:px-4 rounded-xl">
+        {/* Search Bar */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            placeholder="Search accounts by number, currency, status, or owner..."
+            value={accountSearch}
+            onChange={(e) => setAccountSearch(e.target.value)}
+            className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition"
+          />
+          {accountSearch && (
+            <button
+              type="button"
+              onClick={() => setAccountSearch('')}
+              className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300 transition"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Status Filters */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
+          {[
+            { key: 'ALL', label: 'All' },
+            { key: 'ACTIVE', label: 'Active' },
+            { key: 'FROZEN', label: 'Frozen' },
+            { key: 'SUSPENDED', label: 'Suspended' }
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`text-xs px-2.5 py-1 rounded-md font-mono transition ${
+                statusFilter === f.key
+                  ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-obsidian-900'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+          <span className="text-[10px] font-mono text-slate-500 pl-2">
+            ({filteredAccounts.length}/{accounts.length})
+          </span>
+        </div>
+      </div>
+
       {/* Account Cards Grid */}
       {accounts.length === 0 ? (
         <div className="text-center py-12 bg-obsidian-850/50 border border-dashed border-obsidian-750 rounded-xl">
           <Wallet className="w-10 h-10 text-slate-600 mx-auto mb-3" />
           <p className="text-xs text-slate-400">No ledger accounts accessible under current authorization profile.</p>
         </div>
+      ) : filteredAccounts.length === 0 ? (
+        <div className="text-center py-12 bg-obsidian-850/50 border border-dashed border-obsidian-750 rounded-xl">
+          <Wallet className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+          <p className="text-xs text-slate-400">No accounts match the search criteria "{accountSearch}".</p>
+          <button
+            onClick={() => { setAccountSearch(''); setStatusFilter('ALL'); }}
+            className="mt-3 text-xs text-emerald-400 hover:underline font-mono"
+          >
+            Reset search and filters
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {accounts.map((acc) => {
+          {filteredAccounts.map((acc) => {
             return (
               <div
                 key={acc.id}

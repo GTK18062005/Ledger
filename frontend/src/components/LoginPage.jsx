@@ -221,3 +221,4 @@ export default function LoginPage({ onLogin, loading, onOpenOnboardModal, onOpen
     </div>
   );
 }
+

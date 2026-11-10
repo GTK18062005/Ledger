@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, ArrowDownLeft, ArrowUpRight, AlertOctagon, RefreshCw, Filter, ShieldCheck, Hash, ShieldAlert, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { FileText, ArrowDownLeft, ArrowUpRight, AlertOctagon, RefreshCw, Filter, ShieldCheck, Hash, ShieldAlert, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, X } from 'lucide-react';
 
 export default function StatementViewer({
   selectedAccount,
@@ -10,6 +10,7 @@ export default function StatementViewer({
   loading
 }) {
   const [filterType, setFilterType] = useState('ALL'); // 'ALL', 'CREDIT', 'DEBIT', 'REFUSED'
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -21,12 +22,27 @@ export default function StatementViewer({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterType, selectedAccount, pageSize]);
+  }, [filterType, selectedAccount, pageSize, searchQuery]);
 
   const filteredStatement = (statement || []).filter(item => {
-    if (filterType === 'ALL') return true;
-    if (filterType === 'REFUSED') return item.status === 'REFUSED';
-    return item.entryType === filterType && item.status !== 'REFUSED';
+    if (filterType === 'REFUSED' && item.status !== 'REFUSED') return false;
+    if (filterType === 'CREDIT' && (item.entryType !== 'CREDIT' || item.status === 'REFUSED')) return false;
+    if (filterType === 'DEBIT' && (item.entryType !== 'DEBIT' || item.status === 'REFUSED')) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const txId = (item.transactionId || '').toLowerCase();
+      const cp = (item.counterpartyAccount || '').toLowerCase();
+      const desc = (item.description || '').toLowerCase();
+      const status = (item.status || '').toLowerCase();
+      const entryType = (item.entryType || '').toLowerCase();
+      const amt = item.amount != null ? String(item.amount) : '';
+      const date = (item.timestamp || item.createdAt || '').toLowerCase();
+      const match = txId.includes(q) || cp.includes(q) || desc.includes(q) || status.includes(q) || entryType.includes(q) || amt.includes(q) || date.includes(q);
+      if (!match) return false;
+    }
+
+    return true;
   });
 
   const totalItems = filteredStatement.length;
@@ -85,44 +101,67 @@ export default function StatementViewer({
         </div>
       </div>
 
-      {/* Filter Tabs & Pagination Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2">
-          <Filter className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-xs text-slate-400 font-mono mr-1">Filter:</span>
-          {[
-            { key: 'ALL', label: 'All Postings' },
-            { key: 'CREDIT', label: 'Credits (+)' },
-            { key: 'DEBIT', label: 'Debits (-)' },
-            { key: 'REFUSED', label: 'Refusals & Violations' }
-          ].map(f => (
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-obsidian-950/60 p-3 rounded-lg border border-obsidian-800">
+        {/* Search Bar */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            placeholder="Search statement by ID, counterparty, memo, amount..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-obsidian-950 border border-obsidian-750 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition"
+          />
+          {searchQuery && (
             <button
-              key={f.key}
-              onClick={() => setFilterType(f.key)}
-              className={`text-xs px-2.5 py-1 rounded-md font-mono font-medium transition ${
-                filterType === f.key
-                  ? 'bg-obsidian-800 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-obsidian-900'
-              }`}
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300 transition"
+              title="Clear search"
             >
-              {f.label}
+              <X className="w-3.5 h-3.5" />
             </button>
-          ))}
+          )}
         </div>
 
-        {/* Page size dropdown */}
-        <div className="flex items-center space-x-2 font-mono text-xs text-slate-400 self-end sm:self-auto">
-          <span>Per page:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="bg-obsidian-950 border border-obsidian-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
+        {/* Filter Tabs & Page size */}
+        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3">
+          <div className="flex items-center space-x-1.5 overflow-x-auto">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            {[
+              { key: 'ALL', label: 'All' },
+              { key: 'CREDIT', label: 'Credits (+)' },
+              { key: 'DEBIT', label: 'Debits (-)' },
+              { key: 'REFUSED', label: 'Refusals' }
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilterType(f.key)}
+                className={`text-xs px-2.5 py-1 rounded-md font-mono font-medium transition ${
+                  filterType === f.key
+                    ? 'bg-obsidian-800 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-obsidian-900'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center space-x-2 font-mono text-xs text-slate-400">
+            <span>Per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="bg-obsidian-950 border border-obsidian-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -132,8 +171,16 @@ export default function StatementViewer({
           Select an account above to inspect its append-only ledger entries.
         </div>
       ) : totalItems === 0 ? (
-        <div className="text-center py-12 text-slate-400 text-xs bg-obsidian-950/40 rounded-lg border border-obsidian-800 font-mono">
-          No ledger entries match this criteria.
+        <div className="text-center py-12 text-slate-400 text-xs bg-obsidian-950/40 rounded-lg border border-obsidian-800 font-mono space-y-2">
+          <p>No ledger entries match {searchQuery ? `"${searchQuery}"` : 'this criteria'}.</p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-xs text-emerald-400 hover:underline"
+            >
+              Clear search filter
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

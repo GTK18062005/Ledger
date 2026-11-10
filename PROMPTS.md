@@ -328,4 +328,44 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`FinancialAndSecurityTests.java#testStatementServicePagination`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/FinancialAndSecurityTests.java)
 - **Commit Reference:** [`dfa4a09`](https://github.com/GTK18062005/Ledger/commit/dfa4a09)
 
+---
+
+## Entry 11: Real-Time Search, UI De-Cluttering & Tomcat Error Handling on Account Status Mutation
+
+- **Date:** 2026-11-11 (Midnight)
+- **Target Area:** UI Usability, Real-Time Filtering, HTTP Dispatcher Resilience & Error Handling
+- **What was asked for:**  
+  1. Add search bars in "My Accounts", "Statement and History", and "Admin and Audit".  
+  2. Remove the unwanted features identified in screenshots: the multi-tenant persona switcher banner at the top of the dashboard and the massive wall of account chips under "Quick select:" in the admin panel.  
+  3. Resolve the Tomcat error `StandardHostValve.invoke / ErrorReportValve.invoke` thrown when updating account status.
+- **What the tool produced:**  
+  The AI previously mapped `@PostMapping("/{id}/status")` on `AccountController.java` while `api.js` dispatched HTTP `PATCH`, and enforced `@NotBlank` on `adminReason`. When Tomcat processed the request, the method mismatch or missing reason triggered Spring's unhandled `HttpRequestMethodNotSupportedException`, leading to Tomcat's internal `ErrorReportValve` stack trace. Furthermore, the UI suffered from severe clutter due to the `Quick select:` button wall (rendering every database/test account) and the duplicate persona switcher banner.
+- **What was wrong with it:**  
+  1. **Tomcat Dispatcher Crash & Fragile HTTP Semantics:** Strict POST-only mapping rejected standard RESTful PATCH updates from the frontend. In the absence of an explicit `HttpRequestMethodNotSupportedException` handler in `GlobalExceptionHandler`, Tomcat's `ErrorReportValve` trapped the unhandled servlet exception, exposing container internals rather than structured JSON.
+  2. **Strict Validation Friction:** Enforcing `@NotBlank` on `adminReason` caused 400 Bad Request rejections whenever an administrator quickly adjusted an account's freeze state without typing an extensive memo.
+  3. **Visual Clutter & Poor Discoverability:** Dozens of account chips filled the screen horizontally, and the lack of search bars made finding specific accounts or audit entries tedious.
+- **What was done instead:**  
+  1. **Removed Unwanted Elements:**
+     - Removed `<DemoUserSwitcher>` from `App.jsx` (authenticated dashboard is now uncluttered; persona switching is cleanly isolated to `LoginPage.jsx`).
+     - Removed the entire `Quick select:` wall of account buttons from `AdminAuditorPanel.jsx`.
+  2. **Fixed Account Status Endpoint & Exception Handling:**
+     - Updated `AccountController.java` to `@RequestMapping(value = "/{id}/status", method = {RequestMethod.POST, RequestMethod.PATCH, RequestMethod.PUT})`.
+     - Relaxed `UpdateAccountStatusRequest.java` to provide a fallback reason (`"Administrative status update"`) if left blank.
+     - Updated `frontend/src/api.js` to dispatch `POST` with safe fallback parameters.
+     - Added dedicated exception handlers in `GlobalExceptionHandler.java` for `HttpRequestMethodNotSupportedException`, `HttpMessageNotReadableException`, and `IllegalArgumentException`, ensuring all client errors return structured JSON `ErrorResponse` and never trigger Tomcat's `ErrorReportValve`.
+  3. **Added Real-Time Search Bars:**
+     - **My Accounts (`AccountDashboard.jsx`):** Added search input with search icon, clear button (`X`), and live filtering across account number, currency, status, and owner, alongside status filter chips and count indicator.
+     - **Statement & History (`StatementViewer.jsx`):** Added search input filtering transactions by ID, counterparty, description, amount, status, or date, seamlessly integrated with pagination and filter tabs.
+     - **Admin & Audit (`AdminAuditorPanel.jsx`):** Added search bar and pagination for Account Status & Freeze Controls, and polished the existing immutable audit trail search bar with clear button (`X`).
+- **Primary Source Code & Tests:**  
+  - [`AccountController.java#updateAccountStatus`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/AccountController.java)
+  - [`GlobalExceptionHandler.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/exceptions/GlobalExceptionHandler.java)
+  - [`UpdateAccountStatusRequest.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/dto/UpdateAccountStatusRequest.java)
+  - [`App.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/App.jsx)
+  - [`AccountDashboard.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AccountDashboard.jsx)
+  - [`StatementViewer.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/StatementViewer.jsx)
+  - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
+- **Commit Reference:** [`489115c`](https://github.com/GTK18062005/Ledger/commit/489115c)
+
+
 

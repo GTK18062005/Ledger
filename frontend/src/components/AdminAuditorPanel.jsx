@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldAlert, BarChart3, Search, RefreshCw, AlertTriangle, CheckCircle, 
   Lock, Eye, Users, Shield, AlertOctagon, Edit3, PlusCircle, Coins, 
-  ArrowRight, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2 
+  ArrowRight, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CheckCircle2, X 
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -13,7 +13,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Account Status Update Dialog state
+  // Account Status Update Dialog & Search state
+  const [accountSearch, setAccountSearch] = useState('');
+  const [accountPage, setAccountPage] = useState(1);
+  const [accountPageSize, setAccountPageSize] = useState(6);
   const [selectedAccForStatus, setSelectedAccForStatus] = useState(null);
   const [newStatus, setNewStatus] = useState('FROZEN');
   const [adminReason, setAdminReason] = useState('');
@@ -64,12 +67,13 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
 
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
-    if (!selectedAccForStatus || !adminReason.trim()) return;
+    if (!selectedAccForStatus) return;
 
     setStatusSubmitting(true);
     setStatusMessage(null);
     try {
-      await api.updateAccountStatus(selectedAccForStatus.id, newStatus, adminReason);
+      const reason = adminReason && adminReason.trim() ? adminReason.trim() : 'Administrative status update';
+      await api.updateAccountStatus(selectedAccForStatus.id, newStatus, reason);
       setStatusMessage({ type: 'success', text: `Account status successfully updated to ${newStatus}. Audited.` });
       setSelectedAccForStatus(null);
       setAdminReason('');
@@ -128,6 +132,24 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
   const startLogIndex = (validLogPage - 1) * logPageSize;
   const endLogIndex = Math.min(startLogIndex + logPageSize, totalLogs);
   const paginatedLogs = filteredLogs.slice(startLogIndex, endLogIndex);
+
+  const filteredStatusAccounts = (accounts || []).filter(acc => {
+    if (!accountSearch.trim()) return true;
+    const q = accountSearch.toLowerCase();
+    const accNum = (acc.accountNumber || '').toLowerCase();
+    const owner = (acc.ownerEmail || acc.ownerId || '').toLowerCase();
+    const status = (acc.status || '').toLowerCase();
+    const curr = (acc.currency || '').toLowerCase();
+    const id = (acc.id || '').toLowerCase();
+    return accNum.includes(q) || owner.includes(q) || status.includes(q) || curr.includes(q) || id.includes(q);
+  });
+
+  const totalStatusAccounts = filteredStatusAccounts.length;
+  const totalAccountPages = Math.max(1, Math.ceil(totalStatusAccounts / accountPageSize));
+  const validAccountPage = Math.min(accountPage, totalAccountPages);
+  const startAccIdx = (validAccountPage - 1) * accountPageSize;
+  const endAccIdx = Math.min(startAccIdx + accountPageSize, totalStatusAccounts);
+  const paginatedStatusAccounts = filteredStatusAccounts.slice(startAccIdx, endAccIdx);
 
   return (
     <div className="space-y-6">
@@ -207,7 +229,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           )}
 
           <form onSubmit={handleAdminDeposit} className="space-y-4">
-            {/* Target Account Input & Quick Select Chips */}
+            {/* Target Account Input */}
             <div>
               <label className="block text-xs font-mono font-medium text-slate-300 mb-1.5">
                 Target Account ID or Account Number
@@ -222,27 +244,6 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                   className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono transition"
                 />
               </div>
-
-              {/* Quick Account Chips */}
-              {accounts.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] text-slate-500 font-mono">Quick select:</span>
-                  {accounts.map(acc => (
-                    <button
-                      key={acc.id}
-                      type="button"
-                      onClick={() => setDepositTarget(acc.accountNumber || acc.id)}
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition ${
-                        depositTarget === acc.accountNumber || depositTarget === acc.id
-                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500'
-                          : 'bg-obsidian-950 text-slate-400 hover:text-slate-200 border-obsidian-800 hover:border-obsidian-700'
-                      }`}
-                    >
-                      {acc.accountNumber} ({formatBalance(acc.balance)})
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Amount Input & Preset Chips */}
@@ -318,7 +319,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       {/* Account Status Control (Admin Only) */}
       {user.role === 'ADMIN' && accounts.length > 0 && (
         <div className="bg-obsidian-850 border border-obsidian-750 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-obsidian-750 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-obsidian-750 pb-3">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center space-x-2">
                 <Shield className="w-4 h-4 text-purple-400" />
@@ -327,6 +328,30 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
               <p className="text-xs text-slate-400">
                 Immediately block or restore debit/credit execution. Every status change generates a tamper-proof audit record.
               </p>
+            </div>
+
+            {/* Account Search Bar */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search accounts to manage..."
+                value={accountSearch}
+                onChange={(e) => {
+                  setAccountSearch(e.target.value);
+                  setAccountPage(1);
+                }}
+                className="bg-obsidian-950 border border-obsidian-700 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 w-full sm:w-64 font-mono transition"
+              />
+              {accountSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAccountSearch('')}
+                  className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -340,43 +365,79 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {accounts.map((acc) => (
-              <div
-                key={acc.id}
-                className="bg-obsidian-950 border border-obsidian-800 rounded-lg p-3.5 flex items-center justify-between"
-              >
-                <div>
-                  <div className="text-xs font-mono font-bold text-slate-200">
-                    {acc.accountNumber}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    {acc.ownerEmail || 'System Entity'} • {formatBalance(acc.balance)}
-                  </div>
-                  <span className={`inline-block mt-1 text-[9px] font-mono px-1.5 py-0.2 rounded border ${
-                    acc.status === 'ACTIVE'
-                      ? 'text-emerald-400 border-emerald-500/30'
-                      : acc.status === 'FROZEN'
-                      ? 'text-amber-400 border-amber-500/30'
-                      : 'text-rose-400 border-rose-500/30'
-                  }`}>
-                    {acc.status}
-                  </span>
-                </div>
+          {filteredStatusAccounts.length === 0 ? (
+            <div className="text-center py-8 text-slate-500 text-xs font-mono bg-obsidian-950/40 rounded-lg border border-obsidian-800">
+              No accounts match "{accountSearch}".
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {paginatedStatusAccounts.map((acc) => (
+                  <div
+                    key={acc.id}
+                    className="bg-obsidian-950 border border-obsidian-800 rounded-lg p-3.5 flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="text-xs font-mono font-bold text-slate-200">
+                        {acc.accountNumber}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {acc.ownerEmail || 'System Entity'} • {formatBalance(acc.balance)}
+                      </div>
+                      <span className={`inline-block mt-1 text-[9px] font-mono px-1.5 py-0.2 rounded border ${
+                        acc.status === 'ACTIVE'
+                          ? 'text-emerald-400 border-emerald-500/30'
+                          : acc.status === 'FROZEN'
+                          ? 'text-amber-400 border-amber-500/30'
+                          : 'text-rose-400 border-rose-500/30'
+                      }`}>
+                        {acc.status}
+                      </span>
+                    </div>
 
-                <button
-                  onClick={() => {
-                    setSelectedAccForStatus(acc);
-                    setNewStatus(acc.status === 'ACTIVE' ? 'FROZEN' : 'ACTIVE');
-                  }}
-                  className="flex items-center space-x-1 text-xs bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 px-2.5 py-1.5 rounded border border-obsidian-750 transition"
-                >
-                  <Edit3 className="w-3 h-3 text-purple-400" />
-                  <span>Update</span>
-                </button>
+                    <button
+                      onClick={() => {
+                        setSelectedAccForStatus(acc);
+                        setNewStatus(acc.status === 'ACTIVE' ? 'FROZEN' : 'ACTIVE');
+                      }}
+                      className="flex items-center space-x-1 text-xs bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 px-2.5 py-1.5 rounded border border-obsidian-750 transition"
+                    >
+                      <Edit3 className="w-3 h-3 text-purple-400" />
+                      <span>Update</span>
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Account Pagination Controls */}
+              {totalStatusAccounts > accountPageSize && (
+                <div className="flex items-center justify-between pt-2 border-t border-obsidian-800 font-mono text-xs text-slate-400">
+                  <span className="text-[11px]">
+                    Showing {startAccIdx + 1}–{endAccIdx} of {totalStatusAccounts} accounts
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setAccountPage(p => Math.max(1, p - 1))}
+                      disabled={validAccountPage <= 1}
+                      className="px-2 py-1 bg-obsidian-900 hover:bg-obsidian-800 disabled:opacity-40 rounded border border-obsidian-750 transition"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-[11px] text-slate-300">
+                      {validAccountPage} / {totalAccountPages}
+                    </span>
+                    <button
+                      onClick={() => setAccountPage(p => Math.min(totalAccountPages, p + 1))}
+                      disabled={validAccountPage >= totalAccountPages}
+                      className="px-2 py-1 bg-obsidian-900 hover:bg-obsidian-800 disabled:opacity-40 rounded border border-obsidian-750 transition"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Status Modal */}
           {selectedAccForStatus && (
@@ -403,14 +464,13 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Mandatory Audited Reason (Required)
+                      Audited Reason (Optional)
                     </label>
                     <textarea
-                      required
                       placeholder="e.g. Compliance AML verification or suspected unauthorized access"
                       value={adminReason}
                       onChange={(e) => setAdminReason(e.target.value)}
-                      className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-purple-500 font-mono"
                       rows={3}
                     />
                   </div>
@@ -458,9 +518,24 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                 type="text"
                 placeholder="Search audit trail..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-obsidian-950 border border-obsidian-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 w-48 sm:w-64 font-mono"
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setLogPage(1);
+                }}
+                className="bg-obsidian-950 border border-obsidian-700 rounded-lg pl-8 pr-8 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 w-48 sm:w-64 font-mono transition"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setLogPage(1);
+                  }}
+                  className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <button

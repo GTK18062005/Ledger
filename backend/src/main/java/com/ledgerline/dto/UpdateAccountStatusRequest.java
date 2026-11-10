@@ -1,7 +1,6 @@
 package com.ledgerline.dto;
 
 import com.ledgerline.models.AccountStatus;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class UpdateAccountStatusRequest {
@@ -9,7 +8,6 @@ public class UpdateAccountStatusRequest {
     @NotNull(message = "Account status is required")
     private AccountStatus status;
 
-    @NotBlank(message = "Administrative reason is mandatory for status changes")
     private String adminReason;
 
     public UpdateAccountStatusRequest() {
@@ -29,7 +27,10 @@ public class UpdateAccountStatusRequest {
     }
 
     public String getAdminReason() {
-        return adminReason;
+        if (adminReason == null || adminReason.trim().isEmpty()) {
+            return "Administrative status update";
+        }
+        return adminReason.trim();
     }
 
     public void setAdminReason(String adminReason) {

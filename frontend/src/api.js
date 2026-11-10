@@ -150,8 +150,11 @@ export const api = {
   }),
 
   updateAccountStatus: (accountId, status, adminReason) => request(`/accounts/${accountId}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status, adminReason })
+    method: 'POST',
+    body: JSON.stringify({
+      status,
+      adminReason: (adminReason && adminReason.trim()) ? adminReason.trim() : 'Administrative status update'
+    })
   }),
 
   getStatement: (accountId, page, size) => {

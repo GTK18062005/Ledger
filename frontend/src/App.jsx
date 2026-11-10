@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import LoginPage from './components/LoginPage';
-import DemoUserSwitcher from './components/DemoUserSwitcher';
 import AccountDashboard from './components/AccountDashboard';
 import TransferForm from './components/TransferForm';
 import StatementViewer from './components/StatementViewer';
@@ -193,13 +192,6 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-6">
-        {/* Interactive Multi-Tenant Persona Switcher */}
-        <DemoUserSwitcher
-          currentUser={user}
-          onSelectUser={handleLogin}
-          loading={loading}
-        />
-
         {/* Primary View Navigation */}
         <div className="border-b border-obsidian-750 flex space-x-4 sm:space-x-6">
           <button
