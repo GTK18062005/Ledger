@@ -506,7 +506,7 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`ProfileTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/ProfileTab.jsx)
   - [`SecurityTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/SecurityTab.jsx)
   - [`SettingsTab.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/SettingsTab.jsx)
-- **Commit Reference:** Pending next commit
+- **Commit Reference:** [`1aedeab`](https://github.com/GTK18062005/Ledger/commit/1aedeab)
 
 
 
