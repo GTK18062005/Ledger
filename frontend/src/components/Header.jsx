@@ -146,3 +146,4 @@ export default function Header({ user, activeTab, onLogout, onSelectUser }) {
     </header>
   );
 }
+

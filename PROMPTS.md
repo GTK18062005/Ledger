@@ -405,7 +405,53 @@ In financial ledger engineering, a plausible but subtly incorrect implementation
   - [`WithdrawModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/WithdrawModal.jsx)
   - [`TransferModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/TransferModal.jsx)
   - [`App.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/App.jsx)
-- **Commit Reference:** [`cf8de12`](https://github.com/GTK18062005/Ledger/commit/cf8de12)
+- **Commit Reference:** [`54cd6f7`](https://github.com/GTK18062005/Ledger/commit/54cd6f7)
+
+---
+
+## Entry 13: Maker-Checker Dual-Control Workflow vs. Client Self-Funding Money-Minting Flaw
+
+- **Date:** 2026-11-11 (Night)
+- **Target Area:** Authorisation, Maker-Checker Dual Control & Anti-Money-Minting Enforcement
+- **What was asked for:**  
+  The user identified an intuitive banking flaw: *"If an account holder can deposit money by himself then what is the use of it. My recommendation was for deposit it should go to the admin then admin have to approve it."*
+- **What the tool produced previously:**  
+  The application allowed regular account holders to directly invoke `POST /api/deposits` via a modal that immediately credited their balance, with the AI assuming that debiting `ACC-SYSTEM-FUNDING` was sufficient because the ledger mathematically conserved zero-sum liquidity.
+- **What was wrong with it:**  
+  **Catastrophic Business Authorization & Fake-Funding Flaw:**  
+  1. Allowing untrusted end-users to self-fund their accounts at will without human or external clearing gateway verification is effectively allowing clients to **"mint money out of thin air"**.
+  2. While mathematically balanced against the system funding clearing account, it violates the standard banking **Maker-Checker (Dual-Control / 4-Eyes) Principle**. In authentic financial institutions, customer deposits are proposals with bank wire/UTR references that must sit in a `PENDING` queue until a treasury officer confirms the external fiat settlement.
+- **What was done instead:**  
+  1. **Dual-Control Schema & Flyway Migration (`V3__deposit_approval_requests.sql`):**
+     - Modeled `deposit_approval_requests` with strict constraints (`amount > 0`), foreign keys to `accounts` and `users`, `status` (`PENDING`, `APPROVED`, `REJECTED`), wire reference memo, reviewer ID, and resulting transaction ID.
+     - Kept `prisma/schema.prisma` synchronized for developer tooling and introspection.
+  2. **Maker-Checker Backend Engine (`DepositApprovalService.java`, `DepositApprovalController.java`):**
+     - Customer submission (`POST /api/deposit-requests`) creates a record in `PENDING` status. **Crucially, the customer's balance remains strictly untouched.**
+     - Enforced RBAC: non-admin callers attempting to approve or reject deposit requests are blocked with `UnauthorizedAccessException` (HTTP 403).
+     - When an administrator approves via `POST /api/deposit-requests/{id}/approve`, the service invokes `DepositService.deposit(...)`, executing the atomic double-entry:
+       - $\text{DEBIT: } \texttt{ACC-SYSTEM-FUNDING}$
+       - $\text{CREDIT: Customer Target Account}$
+       - Net aggregate ledger balance remains strictly conserved: $\sum \Delta \text{Balance} = 0.0000 \text{ INR}$.
+     - When an administrator rejects via `POST /api/deposit-requests/{id}/reject`, status updates to `REJECTED` and account balances remain unaltered.
+     - Preserved direct `/api/deposits` and `/api/admin/deposits` for headless test runners (`FinancialAndSecurityTests`).
+  3. **Swiss Banking UI Upgrades:**
+     - Updated [`DepositModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/DepositModal.jsx) with Maker-Checker disclosure, wire reference (UTR) capture, and submission to the pending approval queue.
+     - Added **"Treasury Deposit Approvals (Maker-Checker Queue)"** in [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx) with live pending counters, requester audit information, and 1-click **Approve & Fund** and **Reject** buttons.
+  4. **Automated Verification Suite (`DepositApprovalWorkflowTests.java`):**
+     - Added 4 automated integration tests verifying:
+       1. Pending request does not alter customer balance.
+       2. Admin approval credits balance and strictly conserves zero-sum ledger invariants.
+       3. Non-admin users are forbidden from approving requests.
+       4. Admin rejection safely discards unverified deposit proposals.
+- **Primary Source Code & Tests:**  
+  - [`DepositApprovalRequest.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/models/DepositApprovalRequest.java)
+  - [`DepositApprovalService.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/services/DepositApprovalService.java)
+  - [`DepositApprovalController.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/main/java/com/ledgerline/controllers/DepositApprovalController.java)
+  - [`DepositApprovalWorkflowTests.java`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/backend/src/test/java/com/ledgerline/DepositApprovalWorkflowTests.java)
+  - [`DepositModal.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/DepositModal.jsx)
+  - [`AdminAuditorPanel.jsx`](file:///c:/Users/tharu/OneDrive/Desktop/snovasys/frontend/src/components/AdminAuditorPanel.jsx)
+- **Commit Reference:** [`cb0f401`](https://github.com/GTK18062005/Ledger/commit/cb0f401)
+
 
 
 

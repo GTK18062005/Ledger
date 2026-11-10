@@ -275,7 +275,34 @@ A latent calculation defect, unhandled rounding error, or manual DBA tampering s
 
 ---
 
-## Complete Test Execution Matrix (46 / 46 PASSED)
+## 13. Unauthorized Self-Funding & Direct Ledger Minting (Maker-Checker Defense)
+
+### Threat
+If a regular account holder can simply invoke a deposit endpoint to instantly credit their own balance with arbitrary sums, untrusted clients can "mint money out of thin air". Even if offset against a clearing account mathematically, business authorization is completely subverted without external settlement proof.
+
+### Mitigation
+1. **Maker-Checker Workflow (Dual-Control Authorization):**
+   - Account holders submit a `DepositApprovalRequest` with requested amount, destination account, and bank wire/UTR settlement reference.
+   - Initial request state is strictly **`PENDING`**. The customer's account balance **remains untouched**.
+2. **Administrative Verification & Treasury Settlement:**
+   - Only users with `ROLE_ADMIN` can review and execute `POST /api/deposit-requests/{id}/approve`.
+   - Upon admin approval, the system atomically posts the double-entry transactions:
+     - $\text{DEBIT: } \texttt{ACC-SYSTEM-FUNDING}$
+     - $\text{CREDIT: Customer Target Account}$
+   - Mathematical zero-sum invariant ($\sum \text{Debits} = \sum \text{Credits}$) is conserved.
+3. **Fraudulent Request Rejection:**
+   - Unverified or suspicious requests are rejected via `POST /api/deposit-requests/{id}/reject`.
+   - Immutable audit logs record the admin review decision, timestamp, and notes.
+
+### Verification Tests
+- `DepositApprovalWorkflowTests.testCustomerDepositRequestDoesNotImmediatelyCreditBalance()`: Confirms balance stays 0.00 until approved.
+- `DepositApprovalWorkflowTests.testAdminApprovalCreditsAccountAndPreservesZeroSum()`: Confirms double-entry execution and zero-sum conservation upon admin approval.
+- `DepositApprovalWorkflowTests.testNonAdminCannotApproveDepositRequest()`: Asserts regular customers receive 403 / `UnauthorizedAccessException`.
+- `DepositApprovalWorkflowTests.testAdminCanRejectDepositRequest()`: Confirms rejection leaves account balances untouched.
+
+---
+
+## Complete Test Execution Matrix (50 / 50 PASSED)
 
 | Suite | Test Name | Target Engine | Threat / Invariant | Status |
 | :--- | :--- | :---: | :--- | :---: |
@@ -319,6 +346,10 @@ A latent calculation defect, unhandled rounding error, or manual DBA tampering s
 | `UserOnboardingAndAdminBootstrapTests` | `testAccountStatusChangeRequiresAdminReason` | H2 | Threat 11: Mandatory Audited Reason | **PASS** |
 | `UserOnboardingAndAdminBootstrapTests` | `testAccountHolderCanOpenSecondaryAccount` | H2 | Requirement 1: Secondary Currency Vaults | **PASS** |
 | `UserOnboardingAndAdminBootstrapTests` | `testHealthCheckEndpointReportsUpAndZeroSum` | H2 | Threat 12: Deployment Health & Zero-Sum Probe | **PASS** |
+| `DepositApprovalWorkflowTests` | `testCustomerDepositRequestDoesNotImmediatelyCreditBalance` | H2 | Threat 13: Maker-Checker Deposit Pending State | **PASS** |
+| `DepositApprovalWorkflowTests` | `testAdminApprovalCreditsAccountAndPreservesZeroSum` | H2 | Threat 13: Admin Dual-Control Double-Entry Settlement | **PASS** |
+| `DepositApprovalWorkflowTests` | `testNonAdminCannotApproveDepositRequest` | H2 | Threat 13: RBAC Approval Access Control | **PASS** |
+| `DepositApprovalWorkflowTests` | `testAdminCanRejectDepositRequest` | H2 | Threat 13: Admin Fraudulent Request Rejection | **PASS** |
 | `PostgreSqlIntegrationTests` | `testFlywayMigrationAppliedOnPostgres` | **PostgreSQL 18** | Threat 9: Flyway Migration Integrity | **PASS** |
 | `PostgreSqlIntegrationTests` | `testPostgreSqlConcurrentWithdrawalsRowLocking` | **PostgreSQL 18** | Threat 1: Native Row Locking & Overdraft Block | **PASS** |
 | `PostgreSqlIntegrationTests` | `testPostgreSqlOppositeDirectionTransfersDeadlockFree` | **PostgreSQL 18** | Threat 7: Native Bidirectional Deadlock Safety | **PASS** |

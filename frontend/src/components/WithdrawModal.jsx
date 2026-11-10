@@ -155,3 +155,4 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
     </div>
   );
 }
+

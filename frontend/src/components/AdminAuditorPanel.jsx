@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldAlert, BarChart3, Search, RefreshCw, AlertTriangle, CheckCircle, 
-  Lock, Eye, Users, Shield, AlertOctagon, Edit3, PlusCircle, Coins, 
+  Lock, Eye, Users, Shield, ShieldCheck, AlertOctagon, Edit3, PlusCircle, Coins, 
   ArrowRight, ChevronLeft, ChevronRight, CheckCircle2, X 
 } from 'lucide-react';
 import { api } from '../api';
@@ -34,6 +34,11 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
   const [logPage, setLogPage] = useState(1);
   const [logPageSize, setLogPageSize] = useState(10);
 
+  // Maker-Checker Deposit Approvals state
+  const [depositRequests, setDepositRequests] = useState([]);
+  const [depositRequestActioning, setDepositRequestActioning] = useState(null);
+  const [approvalFeedback, setApprovalFeedback] = useState(null);
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -44,16 +49,51 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       if (user.role === 'ADMIN') {
         promises.push(api.getAdminUsers());
       }
-      const [agg, logs, usersList] = await Promise.all(promises);
-      setAggregate(agg);
-      setAuditLogs(logs || []);
-      if (usersList) {
-        setAdminUsers(usersList);
+      if (user.role === 'ADMIN' || user.role === 'AUDITOR') {
+        promises.push(api.getDepositRequests().catch(() => []));
+      }
+      const results = await Promise.all(promises);
+      setAggregate(results[0]);
+      setAuditLogs(results[1] || []);
+      if (user.role === 'ADMIN') {
+        setAdminUsers(results[2] || []);
+        setDepositRequests(results[3] || []);
+      } else {
+        setDepositRequests(results[2] || []);
       }
     } catch (e) {
       console.error("Failed to load admin/auditor telemetry:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveDepositRequest = async (id, memo) => {
+    setDepositRequestActioning(id);
+    setApprovalFeedback(null);
+    try {
+      await api.approveDepositRequest(id, `Approved by ${user.email} (${memo || 'Wire verified'})`);
+      setApprovalFeedback({ type: 'success', text: 'Deposit request approved. Funds credited via double-entry against SYSTEM_FUNDING.' });
+      if (onRefreshAccounts) await onRefreshAccounts();
+      await loadData();
+    } catch (err) {
+      setApprovalFeedback({ type: 'error', text: err.message || 'Failed to approve deposit request' });
+    } finally {
+      setDepositRequestActioning(null);
+    }
+  };
+
+  const handleRejectDepositRequest = async (id) => {
+    setDepositRequestActioning(id);
+    setApprovalFeedback(null);
+    try {
+      await api.rejectDepositRequest(id, `Declined by administrator: Unverified settlement`);
+      setApprovalFeedback({ type: 'success', text: 'Deposit request rejected.' });
+      await loadData();
+    } catch (err) {
+      setApprovalFeedback({ type: 'error', text: err.message || 'Failed to reject deposit request' });
+    } finally {
+      setDepositRequestActioning(null);
     }
   };
 
@@ -203,6 +243,128 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           </div>
         </div>
       </div>
+
+      {/* Maker-Checker Deposit Approvals (Admin & Auditor) */}
+      {(user.role === 'ADMIN' || user.role === 'AUDITOR') && (
+        <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#edf3ec] pb-3">
+            <div>
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-[#133e2b]" />
+                <h3 className="text-base font-semibold text-[#122a1f]">
+                  Treasury Deposit Approvals (Maker-Checker Queue)
+                </h3>
+                {depositRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#fef3c7] text-[#92400e] border border-[#fde68a]">
+                    {depositRequests.filter(r => r.status === 'PENDING').length} Pending
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#52705e] mt-0.5">
+                Dual-control authorization: Customers propose deposits; Administrators verify settlement and release funds.
+              </p>
+            </div>
+          </div>
+
+          {approvalFeedback && (
+            <div className={`p-3.5 rounded-xl text-xs flex items-center space-x-2 ${
+              approvalFeedback.type === 'success'
+                ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
+                : 'bg-rose-50 text-rose-700 border border-rose-200'
+            }`}>
+              {approvalFeedback.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+              )}
+              <span>{approvalFeedback.text}</span>
+            </div>
+          )}
+
+          {depositRequests.length === 0 ? (
+            <div className="p-6 text-center text-xs text-[#6c8a77] bg-[#f8faf7] rounded-2xl border border-dashed border-[#d6e2d4]">
+              No deposit requests submitted yet. Customer requests will appear here for review.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-[#edf3ec] text-[#6c8a77] font-mono text-[11px] uppercase tracking-wider">
+                    <th className="py-2.5 px-3">Date / ID</th>
+                    <th className="py-2.5 px-3">Account</th>
+                    <th className="py-2.5 px-3">Requester</th>
+                    <th className="py-2.5 px-3">Amount</th>
+                    <th className="py-2.5 px-3">Reference / Memo</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    {user.role === 'ADMIN' && <th className="py-2.5 px-3 text-right">Action</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f2f6f1]">
+                  {depositRequests.map((req) => (
+                    <tr key={req.id} className="hover:bg-[#f8faf7] transition">
+                      <td className="py-3 px-3 font-mono text-[11px] text-[#52705e]">
+                        <div>{req.createdAt ? new Date(req.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                        <div className="text-[9px] text-[#8ea899]">{req.id.substring(0, 8)}...</div>
+                      </td>
+                      <td className="py-3 px-3 font-mono font-medium text-[#122a1f]">
+                        {req.accountNumber || req.accountId?.substring(0, 12)}
+                      </td>
+                      <td className="py-3 px-3 text-[#52705e]">
+                        {req.userEmail || 'Customer'}
+                      </td>
+                      <td className="py-3 px-3 font-serif text-sm font-semibold text-[#122a1f]">
+                        ₹{Number(req.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 px-3 text-[#52705e] max-w-xs truncate" title={req.referenceMemo}>
+                        {req.referenceMemo || '—'}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                          req.status === 'APPROVED'
+                            ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
+                            : req.status === 'REJECTED'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </td>
+                      {user.role === 'ADMIN' && (
+                        <td className="py-3 px-3 text-right">
+                          {req.status === 'PENDING' ? (
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                type="button"
+                                disabled={depositRequestActioning === req.id}
+                                onClick={() => handleApproveDepositRequest(req.id, req.referenceMemo)}
+                                className="px-3 py-1.5 bg-[#133e2b] hover:bg-[#0e2e1f] text-white rounded-lg text-xs font-medium transition shadow-2xs disabled:opacity-50"
+                              >
+                                {depositRequestActioning === req.id ? 'Approving...' : 'Approve & Fund'}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={depositRequestActioning === req.id}
+                                onClick={() => handleRejectDepositRequest(req.id)}
+                                className="px-2.5 py-1.5 border border-rose-300 hover:bg-rose-50 text-rose-700 rounded-lg text-xs font-medium transition disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-mono text-[#8ea899]">
+                              {req.reviewedByEmail ? `by ${req.reviewedByEmail}` : 'Reviewed'}
+                            </span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Admin Add Money / Treasury Credit */}
       {user.role === 'ADMIN' && (

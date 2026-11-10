@@ -39,11 +39,12 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO balancevault_migrator;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO balancevault_migrator;
 
 -- 4. Application Runtime Role (Least-Privilege & Append-Only Financial Enforcement)
--- Tables with standard CRUD: users, accounts, idempotency_records, audit_logs
+-- Tables with standard CRUD: users, accounts, idempotency_records, audit_logs, deposit_approval_requests
 GRANT SELECT, INSERT, UPDATE ON users TO balancevault_app;
 GRANT SELECT, INSERT, UPDATE ON accounts TO balancevault_app;
 GRANT SELECT, INSERT, UPDATE ON idempotency_records TO balancevault_app;
 GRANT SELECT, INSERT, UPDATE ON audit_logs TO balancevault_app;
+GRANT SELECT, INSERT, UPDATE ON deposit_approval_requests TO balancevault_app;
 
 -- FINANCIAL TABLES: Strictly Append-Only (NO UPDATE, NO DELETE)
 -- Even if an attacker gains full SQL injection into the application runtime,

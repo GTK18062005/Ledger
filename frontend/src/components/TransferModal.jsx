@@ -179,3 +179,4 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
     </div>
   );
 }
+

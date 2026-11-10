@@ -195,6 +195,24 @@ export const api = {
   // Admin & Auditor
   getAdminUsers: () => request('/admin/users'),
 
+  // Maker-Checker Deposit Approvals
+  createDepositRequest: (data) => request('/deposit-requests', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+
+  getDepositRequests: (status) => request(status ? `/deposit-requests?status=${status}` : '/deposit-requests'),
+
+  approveDepositRequest: (id, adminNotes) => request(`/deposit-requests/${id}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ adminNotes: adminNotes || 'Approved by administrator' })
+  }),
+
+  rejectDepositRequest: (id, adminNotes) => request(`/deposit-requests/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ adminNotes: adminNotes || 'Rejected by administrator' })
+  }),
+
   adminDeposit: (data, idempotencyKey) => request('/admin/deposits', {
     method: 'POST',
     headers: {

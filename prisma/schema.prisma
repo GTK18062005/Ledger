@@ -51,6 +51,12 @@ enum IdempotencyStatus {
   FAILED
 }
 
+enum DepositApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id           String        @id @default(uuid()) @db.Uuid
   email        String        @unique @db.VarChar(255)
@@ -149,5 +155,25 @@ model IdempotencyRecord {
   @@index([userId], name: "idx_idempotency_user")
   @@index([status], name: "idx_idempotency_status")
   @@map("idempotency_records")
+}
+
+model DepositApprovalRequest {
+  id            String                @id @default(uuid()) @db.Uuid
+  accountId     String                @map("account_id") @db.Uuid
+  userId        String                @map("user_id") @db.Uuid
+  amount        Decimal               @db.Decimal(19, 4)
+  currency      String                @default("INR") @db.VarChar(8)
+  referenceMemo String?               @map("reference_memo") @db.VarChar(255)
+  status        DepositApprovalStatus @default(PENDING)
+  reviewedBy    String?               @map("reviewed_by") @db.Uuid
+  adminNotes    String?               @map("admin_notes") @db.VarChar(500)
+  transactionId String?               @map("transaction_id") @db.Uuid
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime              @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  @@index([status], name: "idx_dep_approval_status")
+  @@index([userId], name: "idx_dep_approval_user")
+  @@index([accountId], name: "idx_dep_approval_account")
+  @@map("deposit_approval_requests")
 }
 
