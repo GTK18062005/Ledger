@@ -1,4 +1,7 @@
-const API_BASE = '/api';
+// In production/cloud deployment, reads from VITE_API_URL (e.g. https://balancevault-backend.onrender.com)
+// In local development, falls back to relative '/api' which Vite proxies to http://localhost:8080
+const RAW_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : '';
+const API_BASE = `${RAW_BASE}/api`;
 
 export const getAuthToken = () => localStorage.getItem('balancevault_token') || localStorage.getItem('ledgerline_token');
 export const setAuthToken = (token) => {

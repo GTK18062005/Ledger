@@ -1,0 +1,25 @@
+# ==============================================================================
+# Render Infrastructure Blueprint for BalanceVault Financial Backend
+# ==============================================================================
+# Use this Blueprint to deploy BalanceVault on Render in 1 click.
+# ==============================================================================
+
+services:
+  - type: web
+    name: balancevault-backend
+    runtime: docker
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: supabase
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres.ilczqdygjmlnehbottwl
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

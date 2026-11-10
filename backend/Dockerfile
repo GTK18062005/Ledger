@@ -33,11 +33,11 @@ USER balancevault
 
 EXPOSE 8080
 
-ENV SPRING_PROFILES_ACTIVE=prod \
+ENV SPRING_PROFILES_ACTIVE=supabase \
     JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/api/health || exit 1
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/balancevault-engine.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dserver.port=${PORT:-8080} -jar /app/balancevault-engine.jar"]
 

@@ -1,15 +1,18 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
     name: balancevault-engine
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:supabase}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL:false}
       timeout: 2000
 
 management:
@@ -91,7 +94,7 @@ spring:
       enabled: false
 
 jwt:
-  secret: SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!
+  secret: ${JWT_SECRET:SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!}
   expiration: 86400000
 
 ---
@@ -124,7 +127,7 @@ spring:
       enabled: false
 
 jwt:
-  secret: SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!
+  secret: ${JWT_SECRET:SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!}
   expiration: 86400000
 
 ---
@@ -156,5 +159,5 @@ spring:
       path: /h2-console
 
 jwt:
-  secret: SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!
+  secret: ${JWT_SECRET:SuperSecretMissionCriticalLedgerLineKeyThatIsAtLeast32BytesLong!}
   expiration: 86400000
