@@ -40,7 +40,7 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
       await api.withdraw(payload);
       setStatus({
         type: 'success',
-        text: `Successfully withdrew ₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}. Cleared to SYSTEM_SETTLEMENT.`
+        text: `Successfully withdrew ₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}. Credited to SYSTEM_SETTLEMENT.`
       });
       setAmount('');
       if (onRefresh) await onRefresh();
@@ -56,32 +56,32 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+      <div className="bg-white border border-[#e5ede3] rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 text-slate-400 hover:text-slate-800 transition"
+          className="absolute right-5 top-5 text-[#6c8a77] hover:text-[#122a1f] transition"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="mb-5">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 font-bold">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a]">
             DOUBLE-ENTRY SETTLEMENT
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mt-1">
-            Withdraw Funds
+          <h3 className="font-serif text-2xl font-normal text-[#122a1f] mt-0.5">
+            Withdraw funds
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Debits your vault with row-level lock and credits SYSTEM_SETTLEMENT.
+          <p className="text-xs text-[#52705e] mt-1">
+            Debits your account and credits SYSTEM_SETTLEMENT to clear funds externally.
           </p>
         </div>
 
         {status && (
-          <div className={`p-3.5 rounded-xl text-xs mb-4 flex items-center space-x-2 font-medium ${
+          <div className={`p-3.5 rounded-xl text-xs mb-4 flex items-center space-x-2 ${
             status.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-rose-50 text-rose-700 border border-rose-200'
+              ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
+              : 'bg-[#fff5f5] text-[#b91c1c] border border-[#fed7d7]'
           }`}>
             {status.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -95,17 +95,17 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-slate-700">
-                Source Vault
+              <label className="block text-xs font-semibold text-[#1e3c2c]">
+                Select Source Account
               </label>
-              <span className="text-[11px] font-mono font-semibold text-emerald-700">
+              <span className="text-[11px] font-mono font-medium text-[#2d5c41]">
                 Available: ₹{maxAvailable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <select
               value={sourceAccount}
               onChange={(e) => setSourceAccount(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
             >
               {accounts.map(acc => (
                 <option key={acc.id} value={acc.accountNumber || acc.id}>
@@ -117,19 +117,19 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-slate-700">
-                Amount ({selectedAcc?.currency || 'INR'})
+              <label className="block text-xs font-semibold text-[#1e3c2c]">
+                Amount (₹ INR)
               </label>
               <button
                 type="button"
                 onClick={() => setAmount(maxAvailable.toString())}
-                className="text-[10px] font-mono uppercase font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 transition"
+                className="text-[10px] font-mono uppercase font-bold text-[#133e2b] bg-[#eaf2e8] hover:bg-[#d8e8d5] px-2 py-0.5 rounded border border-[#cbdec7] transition"
               >
                 Use Max (₹{maxAvailable.toFixed(2)})
               </button>
             </div>
             <div className="relative">
-              <span className="absolute left-3.5 top-2.5 text-xs font-mono text-slate-400">₹</span>
+              <span className="absolute left-3.5 top-2.5 text-xs font-mono text-[#6c8a77]">₹</span>
               <input
                 type="number"
                 step="0.01"
@@ -139,19 +139,17 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
                 placeholder="500.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className={`w-full bg-slate-50 border rounded-xl pl-8 pr-16 py-2.5 text-xs text-slate-900 font-mono focus:outline-none transition ${
+                className={`w-full bg-[#f8faf7] border rounded-xl pl-8 pr-16 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none transition ${
                   isOverdraft
                     ? 'border-rose-400 focus:border-rose-600 bg-rose-50/40'
-                    : 'border-slate-200 focus:border-indigo-500'
+                    : 'border-[#d6e2d4] focus:border-[#133e2b]'
                 }`}
               />
-              <span className="absolute right-3.5 top-2.5 text-[10px] font-mono text-slate-400">
-                {selectedAcc?.currency || 'INR'}
-              </span>
+              <span className="absolute right-3.5 top-2.5 text-[10px] font-mono text-[#6c8a77]">INR</span>
             </div>
 
             {isOverdraft && (
-              <div className="mt-1.5 text-[11px] text-rose-600 flex items-center space-x-1">
+              <div className="mt-1.5 text-[11px] text-rose-600 flex items-center space-x-1 font-sans">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>Overdraft prohibited. Maximum available balance is ₹{maxAvailable.toFixed(2)}.</span>
               </div>
@@ -159,7 +157,7 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
               Settlement Memo (Optional)
             </label>
             <input
@@ -167,7 +165,7 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
               placeholder="e.g. Bank payout to external checking account"
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2.5 text-xs text-[#122a1f] focus:outline-none focus:border-[#133e2b]"
             />
           </div>
 
@@ -175,14 +173,14 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
+              className="px-4 py-2.5 text-xs font-semibold text-[#52705e] hover:text-[#122a1f]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !amount || numAmount <= 0 || isOverdraft}
-              className="px-5 py-2 bg-[#0f172a] hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition shadow-2xs"
+              className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition shadow-sm"
             >
               {submitting ? 'Executing Settlement...' : isOverdraft ? 'Insufficient Funds' : 'Confirm Withdrawal'}
             </button>
@@ -192,3 +190,4 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
     </div>
   );
 }
+

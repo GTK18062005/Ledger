@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Globe, CheckCircle2, Save, Lock } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, DollarSign, Globe, CheckCircle2, Save, Lock } from 'lucide-react';
 
 export default function SettingsTab({ user }) {
   const [currency, setCurrency] = useState('INR');
@@ -15,62 +15,64 @@ export default function SettingsTab({ user }) {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl pb-12">
+    <div className="space-y-6 max-w-3xl">
+      {/* Header Eyebrow & Title */}
       <div>
-        <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 font-bold">
-          WORKSPACE CONFIGURATION
+        <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a] font-semibold">
+          PREFERENCES
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">
-          Preferences & Settings
+        <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#122a1f] mt-1">
+          Settings
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Configure base reporting currency, live telemetry intervals, and alert subscriptions.
+        <p className="text-xs sm:text-sm text-[#52705e] mt-1 font-sans">
+          Customize your workspace view and operational preferences.
         </p>
       </div>
 
       {saved && (
-        <div className="p-4 rounded-xl text-xs flex items-center space-x-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+        <div className="p-4 rounded-2xl text-xs flex items-center space-x-2.5 bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7] transition">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-[#133e2b]" />
           <span className="font-medium">Workspace preferences saved successfully.</span>
         </div>
       )}
 
       <form onSubmit={handleSave} className="space-y-5">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-2xs space-y-5">
-          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3.5">
-            <Globe className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-base font-bold text-slate-900">
-              Display & Accounting Currency
+        {/* Workspace Display Card */}
+        <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-8 shadow-xs space-y-5">
+          <div className="flex items-center space-x-2 border-b border-[#edf3ec] pb-3">
+            <Globe className="w-4 h-4 text-[#133e2b]" />
+            <h2 className="text-base font-semibold text-[#122a1f]">
+              Display & Currency
             </h2>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
               Primary Accounting Currency
             </label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#122a1f] font-sans focus:outline-none focus:border-[#133e2b]"
             >
               <option value="INR">INR — Indian Rupee (₹)</option>
               <option value="USD">USD — US Dollar ($)</option>
               <option value="EUR">EUR — Euro (€)</option>
               <option value="GBP">GBP — British Pound (£)</option>
             </select>
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Base reporting denomination for dashboard cards and reconciliation tables.
+            <p className="text-[11px] text-[#6c8a77] mt-1.5">
+              Standard base currency used for double-entry ledger calculation and aggregate reporting.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
               Telemetry Refresh Cadence
             </label>
             <select
               value={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#122a1f] font-sans focus:outline-none focus:border-[#133e2b]"
             >
               <option value="10s">Real-Time (Every 10 seconds)</option>
               <option value="30s">Standard (Every 30 seconds)</option>
@@ -80,55 +82,57 @@ export default function SettingsTab({ user }) {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
-          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3.5">
-            <Bell className="w-4 h-4 text-indigo-600" />
-            <h2 className="text-base font-bold text-slate-900">
+        {/* Notifications Preferences */}
+        <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#edf3ec] pb-3">
+            <Bell className="w-4 h-4 text-[#133e2b]" />
+            <h2 className="text-base font-semibold text-[#122a1f]">
               Notification Triggers
             </h2>
           </div>
 
           <div className="space-y-3 pt-1">
-            <label className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl cursor-pointer hover:bg-indigo-50/40 transition">
+            <label className="flex items-center justify-between p-3.5 bg-[#f8faf7] border border-[#e5ede3] rounded-2xl cursor-pointer hover:bg-[#f2f6f1] transition">
               <div>
-                <div className="text-xs font-semibold text-slate-900">
-                  Settlement & Transfer Alerts
+                <div className="text-xs font-semibold text-[#122a1f]">
+                  Financial Activity Alerts
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Receive live badges when double-entry transfers or withdrawals settle.
+                <div className="text-[11px] text-[#6c8a77] mt-0.5">
+                  Receive real-time notifications on transfers, deposits, and settlement approvals.
                 </div>
               </div>
               <input
                 type="checkbox"
                 checked={notifyTransactions}
                 onChange={(e) => setNotifyTransactions(e.target.checked)}
-                className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                className="w-4 h-4 accent-[#133e2b] rounded cursor-pointer"
               />
             </label>
 
-            <label className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl cursor-pointer hover:bg-indigo-50/40 transition">
+            <label className="flex items-center justify-between p-3.5 bg-[#f8faf7] border border-[#e5ede3] rounded-2xl cursor-pointer hover:bg-[#f2f6f1] transition">
               <div>
-                <div className="text-xs font-semibold text-slate-900">
-                  Maker-Checker Queue Alerts
+                <div className="text-xs font-semibold text-[#122a1f]">
+                  Maker-Checker Treasury Notifications
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Notify when account openings or deposit requests change status.
+                <div className="text-[11px] text-[#6c8a77] mt-0.5">
+                  Notify when deposit requests are created, reviewed, approved, or rejected.
                 </div>
               </div>
               <input
                 type="checkbox"
                 checked={notifyApprovals}
                 onChange={(e) => setNotifyApprovals(e.target.checked)}
-                className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                className="w-4 h-4 accent-[#133e2b] rounded cursor-pointer"
               />
             </label>
           </div>
         </div>
 
+        {/* Submit Button */}
         <div>
           <button
             type="submit"
-            className="w-full sm:w-auto px-6 py-2.5 bg-[#0f172a] hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-2xs inline-flex items-center justify-center space-x-2"
+            className="w-full sm:w-auto px-6 py-3 bg-[#133e2b] hover:bg-[#0e2e1f] text-white rounded-2xl text-xs sm:text-sm font-semibold transition shadow-xs flex items-center justify-center space-x-2"
           >
             <Save className="w-4 h-4" />
             <span>Save Preferences</span>
@@ -136,13 +140,15 @@ export default function SettingsTab({ user }) {
         </div>
       </form>
 
-      <div className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-        <div>LedgerLine Institutional Infrastructure</div>
+      {/* Swiss Depository Footer */}
+      <div className="pt-8 border-t border-[#e5ede3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#6a8776]">
+        <div>BalanceVault — Financial clarity, by design</div>
         <div className="flex items-center space-x-1.5 text-[11px] font-mono">
-          <Lock className="w-3.5 h-3.5 text-emerald-500" />
-          <span>AES-256 Encrypted Session</span>
+          <Lock className="w-3.5 h-3.5 text-[#597866]" />
+          <span>Secure session</span>
         </div>
       </div>
     </div>
   );
 }
+

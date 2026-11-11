@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import OverviewTab from './components/OverviewTab';
 import AccountDashboard from './components/AccountDashboard';
 import StatementViewer from './components/StatementViewer';
 import AccountRequestTab from './components/AccountRequestTab';
-import { AdminAuditorPanel } from './components/AdminAuditorPanel';
-import AuditorOversightView from './components/AuditorOversightView';
+import AdminAuditorPanel from './components/AdminAuditorPanel';
 import ProfileTab from './components/ProfileTab';
 import SecurityTab from './components/SecurityTab';
 import SettingsTab from './components/SettingsTab';
@@ -17,102 +16,45 @@ import OnboardingModal from './components/OnboardingModal';
 import BootstrapAdminModal from './components/BootstrapAdminModal';
 import LoginPage from './components/LoginPage';
 import { api, getStoredUser, clearAuth } from './api';
-import {
-  Loader2, ArrowDownLeft, ArrowUpRight, ArrowLeftRight,
-  Clock, ShieldCheck, CheckCircle2, AlertTriangle
-} from 'lucide-react';
-
-const ADMIN_PANEL_TABS = new Set([
-  'admin-audit',
-  'admin-users',
-  'admin-accounts',
-  'admin-deposits',
-  'admin-reversals',
-  'audit-logs',
-  'integrity-reports'
-]);
+import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [statement, setStatement] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const [pendingAccountRequestsCount, setPendingAccountRequestsCount] = useState(0);
-  const [pendingDepositRequestsCount, setPendingDepositRequestsCount] = useState(0);
-  const [userDepositRequests, setUserDepositRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview'); // Default to Overview (Image 1 / 3)
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [statementLoading, setStatementLoading] = useState(false);
+  const [pendingAccountRequestsCount, setPendingAccountRequestsCount] = useState(0);
+  const [pendingDepositRequestsCount, setPendingDepositRequestsCount] = useState(0);
 
+  // Modal Dialog states
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showOnboardModal, setShowOnboardModal] = useState(false);
   const [showBootstrapModal, setShowBootstrapModal] = useState(false);
 
-  const loadPendingCounts = useCallback(async (activeUser) => {
-    const u = activeUser || getStoredUser();
-    if (!u) return;
-    try {
-      const [accReqs, depReqs] = await Promise.allSettled([
-        api.getAccountRequests(),
-        api.getDepositRequests()
-      ]);
-
-      if (accReqs.status === 'fulfilled' && Array.isArray(accReqs.value)) {
-        setPendingAccountRequestsCount(accReqs.value.filter(r => r.status === 'PENDING').length);
-      }
-      if (depReqs.status === 'fulfilled' && Array.isArray(depReqs.value)) {
-        setUserDepositRequests(depReqs.value);
-        setPendingDepositRequestsCount(depReqs.value.filter(r => r.status === 'PENDING').length);
-      }
-    } catch {
-      // Non-fatal background badge update
-    }
-  }, []);
-
-  const loadAccounts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await api.getAccounts();
-      const list = data || [];
-      setAccounts(list);
-      if (list.length > 0) {
-        setSelectedAccount((prev) => (prev && list.some(a => a.id === prev.id) ? prev : list[0]));
-      } else {
-        setSelectedAccount(null);
-      }
-    } catch (e) {
-      console.error('Failed to load accounts:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const refreshWorkspace = useCallback(async (activeUser) => {
-    await Promise.all([loadAccounts(), loadPendingCounts(activeUser)]);
-  }, [loadAccounts, loadPendingCounts]);
-
+  // Initialize session: check stored user token; if not present, show LoginPage
   useEffect(() => {
     const init = async () => {
       try {
         const stored = getStoredUser();
         if (stored) {
           setUser(stored);
-          setActiveTab(stored.role === 'AUDITOR' ? 'auditor-overview' : 'overview');
-          await refreshWorkspace(stored);
+          await loadAccounts(stored);
         }
       } catch (e) {
-        console.error('Initialization error:', e);
+        console.error("Initialization error:", e);
       } finally {
         setInitialLoading(false);
       }
     };
     init();
-  }, [refreshWorkspace]);
+  }, []);
 
   const handleLogin = async (email, password) => {
     setLoading(true);
@@ -127,9 +69,10 @@ export default function App() {
         primaryAccountNumber: res.primaryAccountNumber
       };
       setUser(newUser);
-      setActiveTab(newUser.role === 'AUDITOR' ? 'auditor-overview' : 'overview');
-      await refreshWorkspace(newUser);
+      await loadAccounts(newUser);
       return res;
+    } catch (err) {
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -143,8 +86,42 @@ export default function App() {
     setStatement([]);
     setPendingAccountRequestsCount(0);
     setPendingDepositRequestsCount(0);
-    setUserDepositRequests([]);
     setActiveTab('overview');
+  };
+
+  const loadPendingCounts = async (activeUser) => {
+    const u = activeUser || getStoredUser();
+    if (!u) return;
+    try {
+      const accReqs = await api.getAccountRequests('PENDING').catch(() => []);
+      setPendingAccountRequestsCount(Array.isArray(accReqs) ? accReqs.length : 0);
+      if (u.role === 'ADMIN' || u.role === 'AUDITOR') {
+        const depReqs = await api.getDepositRequests('PENDING').catch(() => []);
+        setPendingDepositRequestsCount(Array.isArray(depReqs) ? depReqs.length : 0);
+      } else {
+        setPendingDepositRequestsCount(0);
+      }
+    } catch (e) {
+      // ignore background badge refresh failure
+    }
+  };
+
+  const loadAccounts = async (activeUser) => {
+    setLoading(true);
+    try {
+      const data = await api.getAccounts();
+      setAccounts(data || []);
+      if (data && data.length > 0) {
+        setSelectedAccount(data[0]);
+      } else {
+        setSelectedAccount(null);
+      }
+      await loadPendingCounts(activeUser);
+    } catch (e) {
+      console.error("Failed to load accounts:", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadStatement = async (accountId) => {
@@ -153,7 +130,7 @@ export default function App() {
       const data = await api.getStatement(accountId);
       setStatement(data || []);
     } catch (e) {
-      console.error('Failed to load statement:', e);
+      console.error("Failed to load statement:", e);
       setStatement([]);
     } finally {
       setStatementLoading(false);
@@ -168,20 +145,37 @@ export default function App() {
 
   const handleCreateAccount = async (payload) => {
     await api.createAccount(payload);
-    await refreshWorkspace();
+    await loadAccounts(user);
+  };
+
+  const handleOnboardSuccess = async (res) => {
+    setShowOnboardModal(false);
+    const registered = res?.userId ? {
+      userId: res.userId,
+      email: res.email,
+      fullName: res.fullName || 'Account holder',
+      role: res.role || 'ACCOUNT_HOLDER',
+      primaryAccountId: res.primaryAccountId,
+      primaryAccountNumber: res.primaryAccountNumber
+    } : getStoredUser();
+    if (registered) {
+      setUser(registered);
+      await loadAccounts(registered);
+    }
   };
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+      <div className="min-h-screen flex items-center justify-center bg-[#f7f9f6]">
         <div className="text-center space-y-3 font-mono">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
-          <p className="text-xs text-slate-500">Connecting to LedgerLine Core Infrastructure...</p>
+          <Loader2 className="w-8 h-8 text-[#133e2b] animate-spin mx-auto" />
+          <p className="text-xs text-[#52705e]">Connecting to BalanceVault Swiss Depository...</p>
         </div>
       </div>
     );
   }
 
+  // IF USER IS NOT LOGGED IN: SHOW SWISS LOGIN PAGE
   if (!user) {
     return (
       <>
@@ -195,22 +189,7 @@ export default function App() {
         <OnboardingModal
           isOpen={showOnboardModal}
           onClose={() => setShowOnboardModal(false)}
-          onSuccess={async (newUser) => {
-            setShowOnboardModal(false);
-            if (newUser && newUser.token) {
-              const registered = {
-                userId: newUser.userId,
-                email: newUser.email,
-                fullName: newUser.fullName,
-                role: newUser.role,
-                primaryAccountId: newUser.primaryAccountId,
-                primaryAccountNumber: newUser.primaryAccountNumber
-              };
-              setUser(registered);
-              setActiveTab('overview');
-              await refreshWorkspace(registered);
-            }
-          }}
+          onSuccess={handleOnboardSuccess}
         />
 
         <BootstrapAdminModal
@@ -221,13 +200,9 @@ export default function App() {
     );
   }
 
-  const customerAccounts = (accounts || []).filter(
-    (a) => !a.isSystem && !a.accountNumber?.startsWith('ACC-SYSTEM')
-  );
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-row font-sans selection:bg-indigo-500/20 selection:text-indigo-900">
-      {/* Left Midnight Slate Institutional Sidebar */}
+    <div className="min-h-screen bg-[#f7f9f6] flex flex-row font-sans selection:bg-[#133e2b]/15 selection:text-[#133e2b]">
+      {/* 1. Left Swiss Forest Sidebar (Fixed) */}
       <Sidebar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -237,20 +212,20 @@ export default function App() {
         pendingDepositRequestsCount={pendingDepositRequestsCount}
       />
 
-      {/* Main Workspace Layout */}
+      {/* 2. Main Workspace Layout */}
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        {/* Top Header */}
         <Header
           user={user}
-          accounts={accounts}
+          activeTab={activeTab}
           onLogout={handleLogout}
+          onSelectUser={handleLogin}
           onNavigateTab={setActiveTab}
-          onSelectAccountForStatement={handleSelectAccountForStatement}
-          pendingAccountRequestsCount={pendingAccountRequestsCount}
-          pendingDepositRequestsCount={pendingDepositRequestsCount}
         />
 
-        <main className="flex-1 px-6 sm:px-10 lg:px-10 py-7 overflow-y-auto">
-          <div className="max-w-7xl mx-auto w-full">
+        {/* View Content Area */}
+        <main className="flex-1 px-6 sm:px-10 lg:px-12 py-8 overflow-y-auto">
+          <div className="max-w-6xl mx-auto w-full">
             {activeTab === 'overview' && (
               <OverviewTab
                 user={user}
@@ -260,16 +235,6 @@ export default function App() {
                 onOpenDeposit={() => setShowDepositModal(true)}
                 onOpenWithdraw={() => setShowWithdrawModal(true)}
                 onOpenTransfer={() => setShowTransferModal(true)}
-                pendingAccountRequestsCount={pendingAccountRequestsCount}
-                pendingDepositRequestsCount={pendingDepositRequestsCount}
-              />
-            )}
-
-            {activeTab === 'auditor-overview' && (
-              <AuditorOversightView
-                accounts={accounts}
-                onNavigateTab={setActiveTab}
-                onFilterAuditAlerts={() => setActiveTab('audit-logs')}
               />
             )}
 
@@ -281,7 +246,7 @@ export default function App() {
                 onSelectAccountForTransfer={() => setShowTransferModal(true)}
                 onCreateAccount={handleCreateAccount}
                 onNavigateTab={setActiveTab}
-                onRefresh={() => refreshWorkspace()}
+                onRefresh={() => loadAccounts(user)}
                 loading={loading}
               />
             )}
@@ -301,192 +266,15 @@ export default function App() {
               <AccountRequestTab
                 user={user}
                 accounts={accounts}
-                onRefreshAccounts={() => refreshWorkspace()}
+                onRefreshAccounts={() => loadAccounts(user)}
               />
             )}
 
-            {activeTab === 'operations' && (
-              <div className="space-y-6 pb-16">
-                <div>
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-600">
-                    OPERATIONS & LIQUIDITY
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">
-                    Deposit & Withdraw Desk
-                  </h1>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Initiate Maker-Checker inward deposits or instant double-entry settlements with strict zero-overdraft guards.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
-                    <div>
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mb-4">
-                        <ArrowDownLeft className="w-5 h-5" />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {user.role === 'ADMIN' ? 'Treasury Credit / Deposit' : 'Request Inward Deposit'}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                        {user.role === 'ADMIN'
-                          ? 'Credit customer accounts directly via SYSTEM_FUNDING or review pending customer remittance tickets.'
-                          : 'Submit a wire UTR and deposit request for administrator verification under Maker-Checker dual control.'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setShowDepositModal(true)}
-                      className="mt-5 w-full py-2.5 px-4 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-2"
-                    >
-                      <ArrowDownLeft className="w-4 h-4" />
-                      <span>{user.role === 'ADMIN' ? 'Open Treasury Deposit Form' : 'Submit Deposit Request'}</span>
-                    </button>
-                  </div>
-
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
-                    <div>
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center mb-4">
-                        <ArrowUpRight className="w-5 h-5" />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900">External Settlement Withdrawal</h3>
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                        Withdraw settled liquidity from any active vault to SYSTEM_SETTLEMENT. Enforces strict non-negative balance invariants.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setShowWithdrawModal(true)}
-                      className="mt-5 w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-2"
-                    >
-                      <ArrowUpRight className="w-4 h-4 text-indigo-600" />
-                      <span>Initiate Withdrawal</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Recent Deposit Requests Table */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-indigo-600" />
-                      <h3 className="text-sm font-bold text-slate-900">Deposit Approval Status Tracker</h3>
-                    </div>
-                    {user.role === 'ADMIN' && (
-                      <button
-                        onClick={() => setActiveTab('admin-deposits')}
-                        className="text-xs font-semibold text-indigo-600 hover:underline"
-                      >
-                        Go to Admin Approval Queue &rarr;
-                      </button>
-                    )}
-                  </div>
-
-                  {userDepositRequests.length === 0 ? (
-                    <div className="py-6 text-center text-xs font-mono text-slate-400">
-                      No deposit requests recorded yet.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-slate-100 text-slate-400 font-mono text-[10px] uppercase">
-                            <th className="py-2 px-3">Date</th>
-                            <th className="py-2 px-3">Target Vault</th>
-                            <th className="py-2 px-3">Amount</th>
-                            <th className="py-2 px-3">Reference / Memo</th>
-                            <th className="py-2 px-3">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {userDepositRequests.slice(0, 8).map((r) => (
-                            <tr key={r.id}>
-                              <td className="py-2.5 px-3 font-mono text-[11px] text-slate-500">
-                                {r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
-                              </td>
-                              <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
-                                {r.accountNumber || r.accountId?.substring(0, 10)}
-                              </td>
-                              <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
-                                ₹{Number(r.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                              </td>
-                              <td className="py-2.5 px-3 text-slate-600 max-w-xs truncate">{r.referenceMemo || '—'}</td>
-                              <td className="py-2.5 px-3">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                                  r.status === 'APPROVED'
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : r.status === 'REJECTED'
-                                      ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                      : 'bg-amber-50 text-amber-700 border-amber-200'
-                                }`}>
-                                  {r.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'transfers' && (
-              <div className="space-y-6 pb-16">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-600">
-                      PEER-TO-PEER CLEARING
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">
-                      Atomic Peer Transfers
-                    </h1>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Idempotent double-entry transfers with deterministic row-level locking and non-negative balance protection.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowTransferModal(true)}
-                    className="px-5 py-2.5 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition shadow-2xs inline-flex items-center space-x-2 self-start"
-                  >
-                    <ArrowLeftRight className="w-4 h-4" />
-                    <span>New Peer Transfer</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {customerAccounts.map((acc) => (
-                    <div key={acc.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-xs text-slate-900">{acc.accountNumber}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {acc.status}
-                          </span>
-                        </div>
-                        <div className="text-2xl font-mono font-extrabold text-slate-900 mt-3">
-                          ₹{Math.max(0, parseFloat(acc.balance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </div>
-                        <div className="text-[11px] font-mono text-slate-400 mt-1">{acc.currency} Available Vault</div>
-                      </div>
-                      <button
-                        onClick={() => setShowTransferModal(true)}
-                        className="mt-4 w-full py-2 bg-slate-50 hover:bg-indigo-50 text-indigo-700 border border-slate-200 hover:border-indigo-300 rounded-xl text-xs font-semibold transition"
-                      >
-                        Transfer from {acc.accountNumber} &rarr;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {ADMIN_PANEL_TABS.has(activeTab) && (
+            {activeTab === 'admin-audit' && (
               <AdminAuditorPanel
                 user={user}
                 accounts={accounts}
-                initialSection={activeTab}
-                onRefreshAccounts={loadAccounts}
-                onRequestsUpdated={() => refreshWorkspace()}
+                onRefreshAccounts={() => loadAccounts(user)}
               />
             )}
 
@@ -513,13 +301,13 @@ export default function App() {
         </main>
       </div>
 
-      {/* Modals */}
+      {/* Modals for Quick Actions */}
       <DepositModal
         isOpen={showDepositModal}
         onClose={() => setShowDepositModal(false)}
         accounts={accounts}
         user={user}
-        onRefresh={() => refreshWorkspace()}
+        onRefresh={() => loadAccounts(user)}
       />
 
       <WithdrawModal
@@ -527,7 +315,7 @@ export default function App() {
         onClose={() => setShowWithdrawModal(false)}
         accounts={accounts}
         user={user}
-        onRefresh={() => refreshWorkspace()}
+        onRefresh={() => loadAccounts(user)}
       />
 
       <TransferModal
@@ -535,13 +323,13 @@ export default function App() {
         onClose={() => setShowTransferModal(false)}
         accounts={accounts}
         user={user}
-        onRefresh={() => refreshWorkspace()}
+        onRefresh={() => loadAccounts(user)}
       />
 
       <OnboardingModal
         isOpen={showOnboardModal}
         onClose={() => setShowOnboardModal(false)}
-        onSuccess={() => setShowOnboardModal(false)}
+        onSuccess={handleOnboardSuccess}
       />
 
       <BootstrapAdminModal

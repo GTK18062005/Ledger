@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-600/15 selection:text-indigo-700;
+    @apply bg-[#f7f9f6] text-[#122a1f] font-sans selection:bg-[#133e2b]/15 selection:text-[#133e2b];
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -14,21 +14,21 @@
   }
 }
 
-/* Crisp modern scrollbar */
+/* Custom Swiss banking scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f0f4ee;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cbd8c7;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9ab495;
 }
