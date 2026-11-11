@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/accounts").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/accounts/aggregate").hasAnyRole("ADMIN", "AUDITOR")
                         .requestMatchers("/api/audit-logs/**").hasAnyRole("ADMIN", "AUDITOR")
+                        .requestMatchers(HttpMethod.GET, "/api/transactions/**").hasAnyRole("ADMIN", "AUDITOR")
+                        .requestMatchers(HttpMethod.POST, "/api/transactions/*/reverse").hasRole("ADMIN")
                         // Balance modifying endpoints are strictly prohibited for AUDITOR
                         .requestMatchers(HttpMethod.POST, "/api/transfers/**").hasRole("ACCOUNT_HOLDER")
                         .requestMatchers(HttpMethod.POST, "/api/withdrawals/**").hasRole("ACCOUNT_HOLDER")

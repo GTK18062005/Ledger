@@ -6,6 +6,9 @@ import AccountDashboard from './components/AccountDashboard';
 import StatementViewer from './components/StatementViewer';
 import AccountRequestTab from './components/AccountRequestTab';
 import AdminAuditorPanel from './components/AdminAuditorPanel';
+import OperationsDeskTab from './components/OperationsDeskTab';
+import AuditorOversightTab from './components/AuditorOversightTab';
+import PlatformTransactionsTab from './components/PlatformTransactionsTab';
 import ProfileTab from './components/ProfileTab';
 import SecurityTab from './components/SecurityTab';
 import SettingsTab from './components/SettingsTab';
@@ -23,13 +26,17 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [statement, setStatement] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview'); // Default to Overview (Image 1 / 3)
+  const [activeTab, setActiveTab] = useState('overview');
+  const [statementAccountView, setStatementAccountView] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [statementLoading, setStatementLoading] = useState(false);
   const [pendingAccountRequestsCount, setPendingAccountRequestsCount] = useState(0);
   const [pendingDepositRequestsCount, setPendingDepositRequestsCount] = useState(0);
+  const [securityAlertsCount, setSecurityAlertsCount] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
 
   // Modal Dialog states
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -38,6 +45,12 @@ export default function App() {
   const [showOnboardModal, setShowOnboardModal] = useState(false);
   const [showBootstrapModal, setShowBootstrapModal] = useState(false);
 
+  const getDefaultTabForRole = (role) => {
+    if (role === 'ADMIN') return 'admin-audit';
+    if (role === 'AUDITOR') return 'auditor-overview';
+    return 'overview';
+  };
+
   // Initialize session: check stored user token; if not present, show LoginPage
   useEffect(() => {
     const init = async () => {
@@ -45,6 +58,7 @@ export default function App() {
         const stored = getStoredUser();
         if (stored) {
           setUser(stored);
+          setActiveTab(getDefaultTabForRole(stored.role));
           await loadAccounts(stored);
         }
       } catch (e) {
@@ -69,6 +83,8 @@ export default function App() {
         primaryAccountNumber: res.primaryAccountNumber
       };
       setUser(newUser);
+      setActiveTab(getDefaultTabForRole(newUser.role));
+      setStatementAccountView(false);
       await loadAccounts(newUser);
       return res;
     } catch (err) {
@@ -84,8 +100,12 @@ export default function App() {
     setAccounts([]);
     setSelectedAccount(null);
     setStatement([]);
+    setTransactions([]);
+    setAuditLogs([]);
     setPendingAccountRequestsCount(0);
     setPendingDepositRequestsCount(0);
+    setSecurityAlertsCount(0);
+    setStatementAccountView(false);
     setActiveTab('overview');
   };
 
@@ -95,11 +115,28 @@ export default function App() {
     try {
       const accReqs = await api.getAccountRequests('PENDING').catch(() => []);
       setPendingAccountRequestsCount(Array.isArray(accReqs) ? accReqs.length : 0);
+
       if (u.role === 'ADMIN' || u.role === 'AUDITOR') {
-        const depReqs = await api.getDepositRequests('PENDING').catch(() => []);
+        const [depReqs, txList, logs] = await Promise.all([
+          api.getDepositRequests('PENDING').catch(() => []),
+          api.getTransactions().catch(() => []),
+          api.getAuditLogs().catch(() => [])
+        ]);
         setPendingDepositRequestsCount(Array.isArray(depReqs) ? depReqs.length : 0);
+        setTransactions(Array.isArray(txList) ? txList : []);
+        const validLogs = Array.isArray(logs) ? logs : [];
+        setAuditLogs(validLogs);
+        setSecurityAlertsCount(
+          validLogs.filter((l) => l.status === 'REFUSED' || l.status === 'SECURITY').length
+        );
       } else {
-        setPendingDepositRequestsCount(0);
+        const depReqs = await api.getDepositRequests().catch(() => []);
+        const pendingDeps = Array.isArray(depReqs)
+          ? depReqs.filter((d) => d.status === 'PENDING').length
+          : 0;
+        setPendingDepositRequestsCount(pendingDeps);
+        setSecurityAlertsCount(0);
+        setAuditLogs([]);
       }
     } catch (e) {
       // ignore background badge refresh failure
@@ -112,7 +149,7 @@ export default function App() {
       const data = await api.getAccounts();
       setAccounts(data || []);
       if (data && data.length > 0) {
-        setSelectedAccount(data[0]);
+        setSelectedAccount((prev) => (prev && data.some((a) => a.id === prev.id) ? data.find((a) => a.id === prev.id) : data[0]));
       } else {
         setSelectedAccount(null);
       }
@@ -139,8 +176,16 @@ export default function App() {
 
   const handleSelectAccountForStatement = (acc) => {
     setSelectedAccount(acc);
+    setStatementAccountView(true);
     setActiveTab('statements');
     loadStatement(acc.id);
+  };
+
+  const handleSelectTab = (tabId) => {
+    if (tabId === 'statements') {
+      setStatementAccountView(false);
+    }
+    setActiveTab(tabId);
   };
 
   const handleCreateAccount = async (payload) => {
@@ -205,11 +250,12 @@ export default function App() {
       {/* 1. Left Swiss Forest Sidebar (Fixed) */}
       <Sidebar
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
         user={user}
         onLogout={handleLogout}
         pendingAccountRequestsCount={pendingAccountRequestsCount}
         pendingDepositRequestsCount={pendingDepositRequestsCount}
+        securityAlertsCount={securityAlertsCount}
       />
 
       {/* 2. Main Workspace Layout */}
@@ -220,7 +266,14 @@ export default function App() {
           activeTab={activeTab}
           onLogout={handleLogout}
           onSelectUser={handleLogin}
-          onNavigateTab={setActiveTab}
+          onNavigateTab={handleSelectTab}
+          accounts={accounts}
+          transactions={user?.role === 'ACCOUNT_HOLDER' ? statement : transactions}
+          auditLogs={auditLogs}
+          pendingAccountRequestsCount={pendingAccountRequestsCount}
+          pendingDepositRequestsCount={pendingDepositRequestsCount}
+          securityAlertsCount={securityAlertsCount}
+          onSelectSearchAccount={(acc) => setSelectedAccount(acc)}
         />
 
         {/* View Content Area */}
@@ -230,7 +283,7 @@ export default function App() {
               <OverviewTab
                 user={user}
                 accounts={accounts}
-                onNavigateTab={setActiveTab}
+                onNavigateTab={handleSelectTab}
                 onSelectAccountForStatement={handleSelectAccountForStatement}
                 onOpenDeposit={() => setShowDepositModal(true)}
                 onOpenWithdraw={() => setShowWithdrawModal(true)}
@@ -245,21 +298,48 @@ export default function App() {
                 onSelectAccountForStatement={handleSelectAccountForStatement}
                 onSelectAccountForTransfer={() => setShowTransferModal(true)}
                 onCreateAccount={handleCreateAccount}
-                onNavigateTab={setActiveTab}
+                onNavigateTab={handleSelectTab}
                 onRefresh={() => loadAccounts(user)}
                 loading={loading}
               />
             )}
 
-            {activeTab === 'statements' && (
-              <StatementViewer
-                selectedAccount={selectedAccount}
+            {activeTab === 'operations' && (
+              <OperationsDeskTab
+                user={user}
                 accounts={accounts}
-                onSelectAccount={setSelectedAccount}
-                onLoadStatement={loadStatement}
-                statement={statement}
-                loading={statementLoading}
+                onRefresh={() => loadAccounts(user)}
               />
+            )}
+
+            {activeTab === 'statements' && (
+              (user?.role === 'ADMIN' || user?.role === 'AUDITOR') && !statementAccountView ? (
+                <PlatformTransactionsTab
+                  user={user}
+                  mode="statements"
+                  onRefresh={() => loadAccounts(user)}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {(user?.role === 'ADMIN' || user?.role === 'AUDITOR') && (
+                    <button
+                      type="button"
+                      onClick={() => setStatementAccountView(false)}
+                      className="text-xs font-mono text-[#133e2b] hover:underline"
+                    >
+                      ← Back to Platform Transactions Journal
+                    </button>
+                  )}
+                  <StatementViewer
+                    selectedAccount={selectedAccount}
+                    accounts={accounts}
+                    onSelectAccount={setSelectedAccount}
+                    onLoadStatement={loadStatement}
+                    statement={statement}
+                    loading={statementLoading}
+                  />
+                </div>
+              )
             )}
 
             {activeTab === 'account-request' && (
@@ -270,11 +350,32 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'admin-audit' && (
+            {(activeTab === 'admin-audit' ||
+              activeTab === 'admin-users' ||
+              activeTab === 'admin-accounts' ||
+              activeTab === 'audit-logs') && (
               <AdminAuditorPanel
                 user={user}
                 accounts={accounts}
+                section={activeTab}
                 onRefreshAccounts={() => loadAccounts(user)}
+              />
+            )}
+
+            {(activeTab === 'admin-transactions' || activeTab === 'admin-reversals') && (
+              <PlatformTransactionsTab
+                user={user}
+                mode={activeTab}
+                onRefresh={() => loadAccounts(user)}
+              />
+            )}
+
+            {(activeTab === 'auditor-overview' || activeTab === 'integrity-reports') && (
+              <AuditorOversightTab
+                user={user}
+                mode={activeTab}
+                onNavigateTab={handleSelectTab}
+                onRefresh={() => loadAccounts(user)}
               />
             )}
 

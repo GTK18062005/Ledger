@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldAlert, BarChart3, Search, RefreshCw, AlertTriangle, CheckCircle, 
-  Lock, Eye, Users, Shield, ShieldCheck, AlertOctagon, Edit3, PlusCircle, Coins, 
+import {
+  ShieldAlert, BarChart3, Search, RefreshCw, AlertTriangle, CheckCircle,
+  Lock, Eye, Users, Shield, ShieldCheck, AlertOctagon, Edit3, PlusCircle, Coins,
   ArrowRight, ChevronLeft, ChevronRight, CheckCircle2, X, Download, Building2
 } from 'lucide-react';
 import { api } from '../api';
 
-export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts }) {
+export default function AdminAuditorPanel({
+  user,
+  accounts,
+  onRefreshAccounts,
+  section = 'admin-audit'
+}) {
+  const showOverview = section === 'admin-audit';
+  const showQueues = section === 'admin-audit';
+  const showAccountManagement = section === 'admin-audit' || section === 'admin-accounts';
+  const showUserManagement = section === 'admin-audit' || section === 'admin-users';
+  const showAuditLogs = section === 'admin-audit' || section === 'audit-logs';
   const [aggregate, setAggregate] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [logStatusFilter, setLogStatusFilter] = useState('ALL');
-  
+
   // Account Status Update Dialog & Search state
   const [accountSearch, setAccountSearch] = useState('');
   const [accountPage, setAccountPage] = useState(1);
@@ -307,10 +317,22 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
             GOVERNANCE & COMPLIANCE
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#122a1f] mt-1">
-            Admin & Audit Panel
+            {section === 'admin-users'
+              ? 'User Management'
+              : section === 'admin-accounts'
+                ? 'Account Management'
+                : section === 'audit-logs'
+                  ? 'Immutable Audit Logs'
+                  : 'Admin & Audit Panel'}
           </h1>
           <p className="text-xs text-[#52705e] mt-1">
-            Independent compliance telemetry, system liquidity verification, and audited controls.
+            {section === 'admin-users'
+              ? 'Provisioned identities, assigned roles, and aggregate customer vault custody balances.'
+              : section === 'admin-accounts'
+                ? 'Account opening onboarding queue, active vault status oversight, and freeze controls.'
+                : section === 'audit-logs'
+                  ? 'Forensic immutable event stream covering logins, transfers, refusals, reversals, and integrity runs.'
+                  : 'Independent compliance telemetry, system liquidity verification, and audited controls.'}
           </p>
         </div>
 
@@ -348,11 +370,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
 
       {/* Live Double-Entry Verification Banner */}
       {integrityResult && (
-        <div className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-          integrityResult.status === 'VERIFICATION_FAILED'
+        <div className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${integrityResult.status === 'VERIFICATION_FAILED'
             ? 'bg-rose-50 border-rose-200 text-rose-800'
             : 'bg-[#eaf2e8] border-[#cbdec7] text-[#133e2b]'
-        }`}>
+          }`}>
           <div className="flex items-center space-x-2 font-mono">
             {integrityResult.status === 'VERIFICATION_FAILED' ? (
               <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -370,49 +391,51 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       )}
 
       {/* Telemetry Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-white border border-[#e5ede3] p-6 rounded-3xl shadow-xs">
-          <div className="text-[10px] font-mono font-semibold text-[#5c7c6a] uppercase tracking-wider mb-1 flex items-center space-x-1.5">
-            <BarChart3 className="w-4 h-4 text-[#133e2b]" />
-            <span>Aggregate Core Liquidity</span>
+      {showOverview && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white border border-[#e5ede3] p-6 rounded-3xl shadow-xs">
+            <div className="text-[10px] font-mono font-semibold text-[#5c7c6a] uppercase tracking-wider mb-1 flex items-center space-x-1.5">
+              <BarChart3 className="w-4 h-4 text-[#133e2b]" />
+              <span>Aggregate Core Liquidity</span>
+            </div>
+            <div className="text-2xl sm:text-3xl font-mono font-bold text-[#122a1f] tabular-nums mt-2">
+              {aggregate ? formatBalance(aggregate.totalBalance, aggregate.currency) : '₹0.00 INR'}
+            </div>
+            <div className="text-[11px] text-[#6c8a77] font-mono mt-1">
+              System Zero-Sum Conserved
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-mono font-bold text-[#122a1f] tabular-nums mt-2">
-            {aggregate ? formatBalance(aggregate.totalBalance, aggregate.currency) : '₹0.00 INR'}
-          </div>
-          <div className="text-[11px] text-[#6c8a77] font-mono mt-1">
-            System Zero-Sum Conserved
-          </div>
-        </div>
 
-        <div className="bg-white border border-[#e5ede3] p-6 rounded-3xl shadow-xs">
-          <div className="text-[10px] font-mono font-semibold text-[#5c7c6a] uppercase tracking-wider mb-1 flex items-center space-x-1.5">
-            <Lock className="w-4 h-4 text-[#133e2b]" />
-            <span>Vault Status</span>
+          <div className="bg-white border border-[#e5ede3] p-6 rounded-3xl shadow-xs">
+            <div className="text-[10px] font-mono font-semibold text-[#5c7c6a] uppercase tracking-wider mb-1 flex items-center space-x-1.5">
+              <Lock className="w-4 h-4 text-[#133e2b]" />
+              <span>Vault Status</span>
+            </div>
+            <div className="text-2xl font-bold text-[#122a1f] mt-2">
+              {aggregate ? `${aggregate.activeAccounts} Active` : '0 Active'}
+            </div>
+            <div className="text-[11px] text-[#6c8a77] font-mono mt-1">
+              Total Vaults: {aggregate ? aggregate.totalAccounts : 0}
+            </div>
           </div>
-          <div className="text-2xl font-bold text-[#122a1f] mt-2">
-            {aggregate ? `${aggregate.activeAccounts} Active` : '0 Active'}
-          </div>
-          <div className="text-[11px] text-[#6c8a77] font-mono mt-1">
-            Total Vaults: {aggregate ? aggregate.totalAccounts : 0}
-          </div>
-        </div>
 
-        <div className="bg-white border border-[#e5ede3] p-6 rounded-3xl shadow-xs">
-          <div className="text-[10px] font-mono font-semibold text-[#5c7c6a] uppercase tracking-wider mb-1 flex items-center space-x-1.5">
-            <ShieldAlert className="w-4 h-4 text-[#133e2b]" />
-            <span>Audited Records</span>
-          </div>
-          <div className="text-2xl font-mono font-bold text-[#122a1f] mt-2">
-            {auditLogs.length} Events
-          </div>
-          <div className="text-[11px] text-[#6c8a77] font-mono mt-1">
-            Tamper-Proof Audit Journal
+          <div className="bg-white border border-[#e5ede3] p-6 rounded-3xl shadow-xs">
+            <div className="text-[10px] font-mono font-semibold text-[#5c7c6a] uppercase tracking-wider mb-1 flex items-center space-x-1.5">
+              <ShieldAlert className="w-4 h-4 text-[#133e2b]" />
+              <span>Audited Records</span>
+            </div>
+            <div className="text-2xl font-mono font-bold text-[#122a1f] mt-2">
+              {auditLogs.length} Events
+            </div>
+            <div className="text-[11px] text-[#6c8a77] font-mono mt-1">
+              Tamper-Proof Audit Journal
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Maker-Checker Account Opening Applications Queue (Admin & Auditor) */}
-      {(user.role === 'ADMIN' || user.role === 'AUDITOR') && (
+      {(showQueues || section === 'admin-accounts') && (user.role === 'ADMIN' || user.role === 'AUDITOR') && (
         <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#edf3ec] pb-3">
             <div>
@@ -434,11 +457,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           </div>
 
           {accountOpeningFeedback && (
-            <div className={`p-3.5 rounded-xl text-xs flex items-center space-x-2 ${
-              accountOpeningFeedback.type === 'success'
+            <div className={`p-3.5 rounded-xl text-xs flex items-center space-x-2 ${accountOpeningFeedback.type === 'success'
                 ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
                 : 'bg-rose-50 text-rose-700 border border-rose-200'
-            }`}>
+              }`}>
               {accountOpeningFeedback.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
               ) : (
@@ -486,13 +508,12 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                         {req.reason || '—'}
                       </td>
                       <td className="py-3 px-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
-                          req.status === 'APPROVED'
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${req.status === 'APPROVED'
                             ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
                             : req.status === 'REJECTED'
                               ? 'bg-rose-50 text-rose-700 border border-rose-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
+                          }`}>
                           {req.status}
                         </span>
                         {req.createdAccountNumber && (
@@ -548,7 +569,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       )}
 
       {/* Maker-Checker Deposit Approvals (Admin & Auditor) */}
-      {(user.role === 'ADMIN' || user.role === 'AUDITOR') && (
+      {showQueues && (user.role === 'ADMIN' || user.role === 'AUDITOR') && (
         <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#edf3ec] pb-3">
             <div>
@@ -570,11 +591,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           </div>
 
           {approvalFeedback && (
-            <div className={`p-3.5 rounded-xl text-xs flex items-center space-x-2 ${
-              approvalFeedback.type === 'success'
+            <div className={`p-3.5 rounded-xl text-xs flex items-center space-x-2 ${approvalFeedback.type === 'success'
                 ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
                 : 'bg-rose-50 text-rose-700 border border-rose-200'
-            }`}>
+              }`}>
               {approvalFeedback.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
               ) : (
@@ -622,13 +642,12 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                         {req.referenceMemo || '—'}
                       </td>
                       <td className="py-3 px-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
-                          req.status === 'APPROVED'
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${req.status === 'APPROVED'
                             ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
                             : req.status === 'REJECTED'
                               ? 'bg-rose-50 text-rose-700 border border-rose-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
+                          }`}>
                           {req.status}
                         </span>
                       </td>
@@ -670,7 +689,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       )}
 
       {/* Admin Add Money / Treasury Credit */}
-      {user.role === 'ADMIN' && (
+      {showQueues && user.role === 'ADMIN' && (
         <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-[#edf3ec] pb-3">
             <div>
@@ -685,11 +704,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           </div>
 
           {depositMessage && (
-            <div className={`p-3.5 rounded-xl text-xs font-mono flex items-center space-x-2 ${
-              depositMessage.type === 'success'
+            <div className={`p-3.5 rounded-xl text-xs font-mono flex items-center space-x-2 ${depositMessage.type === 'success'
                 ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
                 : 'bg-rose-50 text-rose-700 border border-rose-200'
-            }`}>
+              }`}>
               {depositMessage.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
               ) : (
@@ -761,7 +779,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       )}
 
       {/* Account Status Control (Admin Only) */}
-      {user.role === 'ADMIN' && accounts.length > 0 && (
+      {showAccountManagement && user.role === 'ADMIN' && accounts.length > 0 && (
         <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#edf3ec] pb-3">
             <div>
@@ -800,11 +818,10 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
           </div>
 
           {statusMessage && (
-            <div className={`p-3.5 rounded-xl text-xs font-mono ${
-              statusMessage.type === 'success'
+            <div className={`p-3.5 rounded-xl text-xs font-mono ${statusMessage.type === 'success'
                 ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
                 : 'bg-rose-50 text-rose-700 border border-rose-200'
-            }`}>
+              }`}>
               {statusMessage.text}
             </div>
           )}
@@ -828,13 +845,12 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                       <div className="text-[10px] text-[#698675] font-mono">
                         {acc.ownerEmail || 'System Entity'} • {formatBalance(acc.balance, 'INR', acc.isSystem || acc.accountNumber?.startsWith('ACC-SYSTEM'))}
                       </div>
-                      <span className={`inline-block mt-1 text-[9px] font-mono px-2 py-0.5 rounded-full border ${
-                        acc.status === 'ACTIVE'
+                      <span className={`inline-block mt-1 text-[9px] font-mono px-2 py-0.5 rounded-full border ${acc.status === 'ACTIVE'
                           ? 'bg-[#eaf2e8] text-[#133e2b] border-[#cbdec7]'
                           : acc.status === 'FROZEN'
-                          ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : 'bg-rose-50 text-rose-800 border-rose-200'
-                      }`}>
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}>
                         {acc.status}
                       </span>
                     </div>
@@ -939,7 +955,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       )}
 
       {/* Registered Users Registry (Admin Only) */}
-      {user.role === 'ADMIN' && adminUsers.length > 0 && (
+      {showUserManagement && user.role === 'ADMIN' && adminUsers.length > 0 && (
         <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-[#edf3ec] pb-3">
             <div>
@@ -960,14 +976,21 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
             {adminUsers.map((usr) => (
               <div
                 key={usr.id}
-                className="bg-[#f8faf7] border border-[#eaf0e8] rounded-2xl p-4 flex items-center justify-between"
+                className="bg-[#f8faf7] border border-[#eaf0e8] rounded-2xl p-4 flex items-center justify-between gap-2"
               >
                 <div className="min-w-0 pr-2">
-                  <div className="text-xs font-mono font-semibold text-[#122a1f] truncate" title={usr.email}>
+                  {usr.fullName && (
+                    <div className="text-xs font-semibold text-[#122a1f] truncate">
+                      {usr.fullName}
+                    </div>
+                  )}
+                  <div className="text-xs font-mono font-medium text-[#2c4a39] truncate" title={usr.email}>
                     {usr.email}
                   </div>
                   <div className="text-[10px] font-mono text-[#789685] mt-0.5">
-                    ID: {usr.id ? `${usr.id.substring(0, 8)}...` : '—'}
+                    {usr.accountCount !== undefined
+                      ? `${usr.accountCount} vaults · ${formatBalance(usr.totalBalance || 0)}`
+                      : `ID: ${usr.id ? `${usr.id.substring(0, 8)}...` : '—'}`}
                   </div>
                 </div>
                 <span className="shrink-0 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]">
@@ -980,174 +1003,173 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
       )}
 
       {/* Audit Log Table with Pagination */}
-      <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#edf3ec]">
-          <div>
-            <h3 className="text-base font-semibold text-[#122a1f] flex items-center space-x-2">
-              <ShieldAlert className="w-4 h-4 text-[#133e2b]" />
-              <span>Immutable System Audit Trail & Security Logs</span>
-            </h3>
-            <p className="text-xs text-[#52705e] mt-0.5">
-              Complete provable journal of registrations, transfers, overdraw attempts, and security verifications.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center space-x-1 bg-[#f8faf7] p-1 rounded-xl border border-[#d6e2d4]">
-              {['ALL', 'SUCCESS', 'REFUSED', 'SECURITY'].map((statusKey) => (
-                <button
-                  key={statusKey}
-                  type="button"
-                  onClick={() => {
-                    setLogStatusFilter(statusKey);
-                    setLogPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold transition ${
-                    logStatusFilter === statusKey
-                      ? 'bg-[#133e2b] text-white shadow-2xs'
-                      : 'text-[#52705e] hover:text-[#122a1f]'
-                  }`}
-                >
-                  {statusKey}
-                </button>
-              ))}
+      {showAuditLogs && (
+        <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#edf3ec]">
+            <div>
+              <h3 className="text-base font-semibold text-[#122a1f] flex items-center space-x-2">
+                <ShieldAlert className="w-4 h-4 text-[#133e2b]" />
+                <span>Immutable System Audit Trail & Security Logs</span>
+              </h3>
+              <p className="text-xs text-[#52705e] mt-0.5">
+                Complete provable journal of registrations, transfers, overdraw attempts, and security verifications.
+              </p>
             </div>
 
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-[#6c8a77] absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search audit trail..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setLogPage(1);
-                }}
-                className="bg-[#f8faf7] border border-[#d6e2d4] rounded-xl pl-8 pr-8 py-1.5 text-xs text-[#122a1f] focus:outline-none focus:border-[#133e2b] w-48 sm:w-56 font-mono transition"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm('');
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center space-x-1 bg-[#f8faf7] p-1 rounded-xl border border-[#d6e2d4]">
+                {['ALL', 'SUCCESS', 'REFUSED', 'SECURITY'].map((statusKey) => (
+                  <button
+                    key={statusKey}
+                    type="button"
+                    onClick={() => {
+                      setLogStatusFilter(statusKey);
+                      setLogPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-semibold transition ${logStatusFilter === statusKey
+                        ? 'bg-[#133e2b] text-white shadow-2xs'
+                        : 'text-[#52705e] hover:text-[#122a1f]'
+                      }`}
+                  >
+                    {statusKey}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-[#6c8a77] absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search audit trail..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
                     setLogPage(1);
                   }}
-                  className="absolute right-2.5 top-2 text-[#6c8a77] hover:text-[#122a1f]"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                  className="bg-[#f8faf7] border border-[#d6e2d4] rounded-xl pl-8 pr-8 py-1.5 text-xs text-[#122a1f] focus:outline-none focus:border-[#133e2b] w-48 sm:w-56 font-mono transition"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setLogPage(1);
+                    }}
+                    className="absolute right-2.5 top-2 text-[#6c8a77] hover:text-[#122a1f]"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="p-1.5 bg-white hover:bg-[#f2f6f1] text-[#133e2b] rounded-xl border border-[#d6e2d4] transition shadow-xs"
+                title="Refresh Audit Logs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#133e2b]' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {totalLogs === 0 ? (
+            <div className="text-center py-12 text-[#6c8a77] text-xs font-mono bg-[#f8faf7] rounded-2xl border border-[#eaf0e8]">
+              No audit records match the current filter.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="overflow-x-auto rounded-2xl border border-[#e5ede3] bg-white">
+                <table className="w-full text-left text-xs text-[#122a1f]">
+                  <thead className="bg-[#f8faf7] text-[#597866] uppercase font-mono text-[10px] tracking-wider border-b border-[#e5ede3]">
+                    <tr>
+                      <th className="px-4 py-3">Timestamp</th>
+                      <th className="px-4 py-3">Operation</th>
+                      <th className="px-4 py-3">Target Account / Resource</th>
+                      <th className="px-4 py-3">Security Role</th>
+                      <th className="px-4 py-3">Details / Interception Reason</th>
+                      <th className="px-4 py-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#edf3ec] font-mono text-[11px]">
+                    {paginatedLogs.map((log) => {
+                      const isSuccess = log.status === 'SUCCESS';
+                      const isRefused = log.status === 'REFUSED';
+
+                      return (
+                        <tr key={log.id} className="hover:bg-[#f6f9f5] transition">
+                          <td className="px-4 py-3 text-[#52705e]">
+                            {new Date(log.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            <div className="text-[10px] text-[#789685]">
+                              {new Date(log.timestamp).toLocaleTimeString()}
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${log.action?.includes('IDOR') || log.action?.includes('SECURITY')
+                                ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                                : 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
+                              }`}>
+                              {log.action || log.operationType}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3 font-semibold text-[#122a1f]">
+                            {log.resource || log.accountNumber || 'SYSTEM'}
+                          </td>
+
+                          <td className="px-4 py-3 text-[#52705e]">
+                            {log.userRole || 'ANONYMOUS'}
+                          </td>
+
+                          <td className="px-4 py-3 font-sans text-[#52705e] max-w-xs truncate" title={log.details}>
+                            {log.details || '—'}
+                          </td>
+
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${isSuccess
+                                ? 'bg-[#eaf2e8] text-[#133e2b] border-[#cbdec7]'
+                                : isRefused
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-rose-50 text-rose-800 border-rose-200'
+                              }`}>
+                              {log.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Audit Pagination */}
+              {totalLogPages > 1 && (
+                <div className="flex items-center justify-between pt-2 text-xs font-mono text-[#52705e]">
+                  <span>Showing {startLogIndex + 1}–{endLogIndex} of {totalLogs} events</span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                      disabled={validLogPage <= 1}
+                      className="px-2.5 py-1 bg-white hover:bg-[#f2f6f1] disabled:opacity-40 rounded-lg border border-[#d6e2d4] font-semibold"
+                    >
+                      Prev
+                    </button>
+                    <span className="font-semibold text-[#122a1f]">{validLogPage} / {totalLogPages}</span>
+                    <button
+                      onClick={() => setLogPage(p => Math.min(totalLogPages, p + 1))}
+                      disabled={validLogPage >= totalLogPages}
+                      className="px-2.5 py-1 bg-white hover:bg-[#f2f6f1] disabled:opacity-40 rounded-lg border border-[#d6e2d4] font-semibold"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="p-1.5 bg-white hover:bg-[#f2f6f1] text-[#133e2b] rounded-xl border border-[#d6e2d4] transition shadow-xs"
-              title="Refresh Audit Logs"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#133e2b]' : ''}`} />
-            </button>
-          </div>
+          )}
         </div>
-
-        {totalLogs === 0 ? (
-          <div className="text-center py-12 text-[#6c8a77] text-xs font-mono bg-[#f8faf7] rounded-2xl border border-[#eaf0e8]">
-            No audit records match the current filter.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="overflow-x-auto rounded-2xl border border-[#e5ede3] bg-white">
-              <table className="w-full text-left text-xs text-[#122a1f]">
-                <thead className="bg-[#f8faf7] text-[#597866] uppercase font-mono text-[10px] tracking-wider border-b border-[#e5ede3]">
-                  <tr>
-                    <th className="px-4 py-3">Timestamp</th>
-                    <th className="px-4 py-3">Operation</th>
-                    <th className="px-4 py-3">Target Account / Resource</th>
-                    <th className="px-4 py-3">Security Role</th>
-                    <th className="px-4 py-3">Details / Interception Reason</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#edf3ec] font-mono text-[11px]">
-                  {paginatedLogs.map((log) => {
-                    const isSuccess = log.status === 'SUCCESS';
-                    const isRefused = log.status === 'REFUSED';
-
-                    return (
-                      <tr key={log.id} className="hover:bg-[#f6f9f5] transition">
-                        <td className="px-4 py-3 text-[#52705e]">
-                          {new Date(log.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          <div className="text-[10px] text-[#789685]">
-                            {new Date(log.timestamp).toLocaleTimeString()}
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                            log.action?.includes('IDOR') || log.action?.includes('SECURITY')
-                              ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                              : 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
-                          }`}>
-                            {log.action || log.operationType}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3 font-semibold text-[#122a1f]">
-                          {log.resource || log.accountNumber || 'SYSTEM'}
-                        </td>
-
-                        <td className="px-4 py-3 text-[#52705e]">
-                          {log.userRole || 'ANONYMOUS'}
-                        </td>
-
-                        <td className="px-4 py-3 font-sans text-[#52705e] max-w-xs truncate" title={log.details}>
-                          {log.details || '—'}
-                        </td>
-
-                        <td className="px-4 py-3 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
-                            isSuccess
-                              ? 'bg-[#eaf2e8] text-[#133e2b] border-[#cbdec7]'
-                              : isRefused
-                              ? 'bg-amber-50 text-amber-800 border-amber-200'
-                              : 'bg-rose-50 text-rose-800 border-rose-200'
-                          }`}>
-                            {log.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Audit Pagination */}
-            {totalLogPages > 1 && (
-              <div className="flex items-center justify-between pt-2 text-xs font-mono text-[#52705e]">
-                <span>Showing {startLogIndex + 1}–{endLogIndex} of {totalLogs} events</span>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setLogPage(p => Math.max(1, p - 1))}
-                    disabled={validLogPage <= 1}
-                    className="px-2.5 py-1 bg-white hover:bg-[#f2f6f1] disabled:opacity-40 rounded-lg border border-[#d6e2d4] font-semibold"
-                  >
-                    Prev
-                  </button>
-                  <span className="font-semibold text-[#122a1f]">{validLogPage} / {totalLogPages}</span>
-                  <button
-                    onClick={() => setLogPage(p => Math.min(totalLogPages, p + 1))}
-                    disabled={validLogPage >= totalLogPages}
-                    className="px-2.5 py-1 bg-white hover:bg-[#f2f6f1] disabled:opacity-40 rounded-lg border border-[#d6e2d4] font-semibold"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

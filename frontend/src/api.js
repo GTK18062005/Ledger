@@ -258,6 +258,14 @@ export const api = {
 
   getAuditLogs: () => request('/audit-logs'),
 
+  // Platform Transactions, Reversals & Continuous Assurance Integrity
+  getTransactions: () => request('/transactions'),
+  reverseTransaction: (id, reason) => request(`/transactions/${id}/reverse`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  }),
+  getIntegrityVerification: () => request('/audit-logs/integrity'),
+
   // Health and Invariant Verification
   getHealth: () => request('/health')
 };
