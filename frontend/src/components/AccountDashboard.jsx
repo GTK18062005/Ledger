@@ -31,8 +31,12 @@ export default function AccountDashboard({
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState(null);
 
-  const formatBalance = (val, currency = 'INR') => {
-    const num = parseFloat(val) || 0;
+  const formatBalance = (val, currency = 'INR', isSystemAcc = false) => {
+    const raw = parseFloat(val) || 0;
+    if (isSystemAcc) {
+      return `₹${Math.abs(raw).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+    }
+    const num = Math.max(0, raw);
     return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   };
 
@@ -85,9 +89,11 @@ export default function AccountDashboard({
     }
   };
 
-  const totalPrimaryCurrencyBalance = accounts
+  const customerAccounts = (accounts || []).filter(a => !a.isSystem && !a.accountNumber?.startsWith('ACC-SYSTEM'));
+
+  const totalPrimaryCurrencyBalance = customerAccounts
     .filter(a => a.currency === 'INR')
-    .reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
+    .reduce((sum, acc) => sum + Math.max(0, parseFloat(acc.balance) || 0), 0);
 
   const filteredAccounts = (accounts || []).filter(acc => {
     if (statusFilter !== 'ALL' && acc.status !== statusFilter) return false;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User as UserIcon, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import { User as UserIcon, CheckCircle2, AlertCircle, Save, Lock } from 'lucide-react';
 import { api, setStoredUser, getStoredUser } from '../api';
 
 export default function ProfileTab({ user, onUserUpdated }) {
@@ -203,6 +203,15 @@ export default function ProfileTab({ user, onUserUpdated }) {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Swiss Depository Footer */}
+      <div className="pt-8 border-t border-[#e5ede3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#6a8776]">
+        <div>BalanceVault — Financial clarity, by design</div>
+        <div className="flex items-center space-x-1.5 text-[11px] font-mono">
+          <Lock className="w-3.5 h-3.5 text-[#597866]" />
+          <span>Secure session</span>
+        </div>
       </div>
     </div>
   );

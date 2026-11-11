@@ -53,7 +53,8 @@ export default function StatementViewer({
   const paginatedStatement = filteredStatement.slice(startIndex, endIndex);
 
   const formatBalance = (val, currency = 'INR') => {
-    const num = parseFloat(val) || 0;
+    const raw = parseFloat(val) || 0;
+    const num = Math.max(0, raw);
     return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   };
 

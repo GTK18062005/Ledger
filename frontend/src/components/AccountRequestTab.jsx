@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, AlertCircle, PlusCircle, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, PlusCircle, ShieldAlert, Lock } from 'lucide-react';
 import { api } from '../api';
 
 export default function AccountRequestTab({ user, accounts, onRefreshAccounts }) {
@@ -106,18 +106,13 @@ export default function AccountRequestTab({ user, accounts, onRefreshAccounts })
             </select>
           </div>
 
-          {/* Warning / Error / Success Banner */}
+          {/* Warning / Error / Success Banner matching reference screenshot */}
           {banner && (
-            <div className={`p-4 rounded-xl text-xs font-medium flex items-center space-x-2.5 ${
+            <div className={`p-3.5 rounded-xl text-xs font-medium ${
               banner.type === 'warning' || banner.type === 'error'
-                ? 'bg-[#fff5f5] text-[#b91c1c] border border-[#fed7d7]'
+                ? 'bg-[#fff1f0] text-[#c53030] border border-[#fcdad7]'
                 : 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
             }`}>
-              {banner.type === 'warning' || banner.type === 'error' ? (
-                <AlertCircle className="w-4 h-4 shrink-0" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-              )}
               <span>{banner.text}</span>
             </div>
           )}
@@ -125,7 +120,7 @@ export default function AccountRequestTab({ user, accounts, onRefreshAccounts })
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-sm tracking-wide"
+            className="w-full py-3.5 bg-[#123825] hover:bg-[#0e291b] disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-sm tracking-wide"
           >
             {submitting ? 'Submitting request...' : 'Submit request'}
           </button>
@@ -145,19 +140,28 @@ export default function AccountRequestTab({ user, accounts, onRefreshAccounts })
               className="bg-white border border-[#e5ede3] rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-xs"
             >
               <div className="flex items-center space-x-3">
-                <div className="text-xs font-mono font-bold text-[#122a1f] tracking-wide uppercase">
+                <div className="text-xs font-sans font-bold text-[#122a1f] tracking-wide uppercase">
                   {req.type} account
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#f0f4ee] text-[#4d6e5a] border border-[#dce6dc]">
+                <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#edf5ec] text-[#2c6b48] border border-[#d6e7d4]">
                   {req.status}
                 </span>
               </div>
 
-              <div className="text-xs font-mono text-[#6c8a77]">
+              <div className="text-xs font-mono text-[#8a9e91]">
                 {req.timestamp}
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Swiss Depository Footer */}
+      <div className="pt-8 border-t border-[#e5ede3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#6a8776]">
+        <div>BalanceVault — Financial clarity, by design</div>
+        <div className="flex items-center space-x-1.5 text-[11px] font-mono">
+          <Lock className="w-3.5 h-3.5 text-[#597866]" />
+          <span>Secure session</span>
         </div>
       </div>
     </div>

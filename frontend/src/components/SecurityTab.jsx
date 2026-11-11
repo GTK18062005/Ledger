@@ -239,6 +239,15 @@ export default function SecurityTab({ user }) {
           </div>
         </div>
       </div>
+
+      {/* Swiss Depository Footer */}
+      <div className="pt-8 border-t border-[#e5ede3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#6a8776]">
+        <div>BalanceVault — Financial clarity, by design</div>
+        <div className="flex items-center space-x-1.5 text-[11px] font-mono">
+          <Lock className="w-3.5 h-3.5 text-[#597866]" />
+          <span>Secure session</span>
+        </div>
+      </div>
     </div>
   );
 }

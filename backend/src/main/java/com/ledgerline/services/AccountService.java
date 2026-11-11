@@ -36,6 +36,10 @@ public class AccountService {
             throw new InvalidTransactionException("Account number already exists: " + request.getAccountNumber());
         }
 
+        if (request.getInitialBalance() != null && request.getInitialBalance().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidTransactionException("Initial account balance cannot be negative. Overdrafts are strictly prohibited.");
+        }
+
         User owner = userRepository.findById(request.getOwnerId())
                 .orElseThrow(() -> new AccountNotFoundException("Owner user not found with ID: " + request.getOwnerId()));
 
@@ -156,6 +160,7 @@ public class AccountService {
                 account.getBalance(),
                 account.getCurrency(),
                 account.getStatus(),
+                account.isSystem(),
                 account.getCreatedAt()
         );
     }

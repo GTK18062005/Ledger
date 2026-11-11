@@ -11,10 +11,19 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState(null);
 
+  const selectedAcc = accounts.find(a => a.accountNumber === sourceAccount || a.id === sourceAccount) || accounts[0];
+  const maxAvailable = Math.max(0, parseFloat(selectedAcc?.balance || 0));
+  const numAmount = parseFloat(amount) || 0;
+  const isOverdraft = numAmount > maxAvailable;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!amount || parseFloat(amount) <= 0) {
+    if (!amount || numAmount <= 0) {
       setStatus({ type: 'error', text: 'Please enter a valid positive withdrawal amount.' });
+      return;
+    }
+    if (isOverdraft) {
+      setStatus({ type: 'error', text: `Cannot withdraw ₹${numAmount.toFixed(2)}. Available balance is ₹${maxAvailable.toFixed(2)}. Negative balances are prohibited.` });
       return;
     }
 
@@ -22,17 +31,16 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
     setStatus(null);
 
     try {
-      const selectedAcc = accounts.find(a => a.accountNumber === sourceAccount || a.id === sourceAccount) || accounts[0];
       const payload = {
         accountId: selectedAcc.id,
-        amount: parseFloat(amount),
+        amount: numAmount,
         description: memo.trim() || 'External Settlement Withdrawal'
       };
 
       await api.withdraw(payload);
       setStatus({
         type: 'success',
-        text: `Successfully withdrew ₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}. Credited to SYSTEM_SETTLEMENT.`
+        text: `Successfully withdrew ₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}. Credited to SYSTEM_SETTLEMENT.`
       });
       setAmount('');
       if (onRefresh) await onRefresh();
@@ -86,9 +94,14 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
-              Select Source Account
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-[#1e3c2c]">
+                Select Source Account
+              </label>
+              <span className="text-[11px] font-mono font-medium text-[#2d5c41]">
+                Available: ₹{maxAvailable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
             <select
               value={sourceAccount}
               onChange={(e) => setSourceAccount(e.target.value)}
@@ -96,29 +109,51 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
             >
               {accounts.map(acc => (
                 <option key={acc.id} value={acc.accountNumber || acc.id}>
-                  {acc.accountNumber} ({acc.currency})
+                  {acc.accountNumber} ({acc.currency}) — ₹{Math.max(0, parseFloat(acc.balance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
-              Amount (₹ INR)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-[#1e3c2c]">
+                Amount (₹ INR)
+              </label>
+              <button
+                type="button"
+                onClick={() => setAmount(maxAvailable.toString())}
+                className="text-[10px] font-mono uppercase font-bold text-[#133e2b] bg-[#eaf2e8] hover:bg-[#d8e8d5] px-2 py-0.5 rounded border border-[#cbdec7] transition"
+              >
+                Use Max (₹{maxAvailable.toFixed(2)})
+              </button>
+            </div>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-xs font-mono text-[#6c8a77]">₹</span>
               <input
                 type="number"
                 step="0.01"
                 min="0.01"
+                max={maxAvailable}
                 required
                 placeholder="500.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl pl-8 pr-3 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                className={`w-full bg-[#f8faf7] border rounded-xl pl-8 pr-16 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none transition ${
+                  isOverdraft
+                    ? 'border-rose-400 focus:border-rose-600 bg-rose-50/40'
+                    : 'border-[#d6e2d4] focus:border-[#133e2b]'
+                }`}
               />
+              <span className="absolute right-3.5 top-2.5 text-[10px] font-mono text-[#6c8a77]">INR</span>
             </div>
+
+            {isOverdraft && (
+              <div className="mt-1.5 text-[11px] text-rose-600 flex items-center space-x-1 font-sans">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Overdraft prohibited. Maximum available balance is ₹{maxAvailable.toFixed(2)}.</span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -144,10 +179,10 @@ export default function WithdrawModal({ isOpen, onClose, accounts, user, onRefre
             </button>
             <button
               type="submit"
-              disabled={submitting || !amount}
-              className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition shadow-sm"
+              disabled={submitting || !amount || numAmount <= 0 || isOverdraft}
+              className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition shadow-sm"
             >
-              {submitting ? 'Executing Settlement...' : 'Confirm Withdrawal'}
+              {submitting ? 'Executing Settlement...' : isOverdraft ? 'Insufficient Funds' : 'Confirm Withdrawal'}
             </button>
           </div>
         </form>

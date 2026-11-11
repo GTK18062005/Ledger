@@ -141,6 +141,9 @@ public class DepositService {
         }
 
         BigDecimal amount = request.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidTransactionException("Deposit amount must be strictly greater than zero.");
+        }
 
         // Mutate balances: System Funding is debited, Customer Account is credited
         lockedFunding.setBalance(lockedFunding.getBalance().subtract(amount));

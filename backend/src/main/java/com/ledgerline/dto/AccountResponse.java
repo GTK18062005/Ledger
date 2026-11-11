@@ -13,6 +13,7 @@ public class AccountResponse {
     private BigDecimal balance;
     private String currency;
     private AccountStatus status;
+    private boolean isSystem;
     private LocalDateTime createdAt;
 
     public AccountResponse() {
@@ -20,6 +21,11 @@ public class AccountResponse {
 
     public AccountResponse(UUID id, String accountNumber, UUID ownerId, String ownerEmail,
                            BigDecimal balance, String currency, AccountStatus status, LocalDateTime createdAt) {
+        this(id, accountNumber, ownerId, ownerEmail, balance, currency, status, false, createdAt);
+    }
+
+    public AccountResponse(UUID id, String accountNumber, UUID ownerId, String ownerEmail,
+                           BigDecimal balance, String currency, AccountStatus status, boolean isSystem, LocalDateTime createdAt) {
         this.id = id;
         this.accountNumber = accountNumber;
         this.ownerId = ownerId;
@@ -27,6 +33,7 @@ public class AccountResponse {
         this.balance = balance;
         this.currency = currency;
         this.status = status;
+        this.isSystem = isSystem;
         this.createdAt = createdAt;
     }
 
@@ -84,6 +91,14 @@ public class AccountResponse {
 
     public void setStatus(AccountStatus status) {
         this.status = status;
+    }
+
+    public boolean isSystem() {
+        return isSystem;
+    }
+
+    public void setSystem(boolean system) {
+        isSystem = system;
     }
 
     public LocalDateTime getCreatedAt() {

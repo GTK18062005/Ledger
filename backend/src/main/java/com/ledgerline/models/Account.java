@@ -103,6 +103,9 @@ public class Account {
     }
 
     public void setBalance(BigDecimal balance) {
+        if (!this.isSystem && balance != null && balance.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("CRITICAL INTEGRITY VIOLATION: Customer account balance cannot be negative (" + balance + ")");
+        }
         this.balance = balance;
     }
 

@@ -152,8 +152,12 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
     }
   };
 
-  const formatBalance = (val, currency = 'INR') => {
-    const num = parseFloat(val) || 0;
+  const formatBalance = (val, currency = 'INR', isSystem = false) => {
+    const raw = parseFloat(val) || 0;
+    if (isSystem) {
+      return `₹${Math.abs(raw).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency} (Allocated)`;
+    }
+    const num = Math.max(0, raw);
     return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   };
 
@@ -523,7 +527,7 @@ export default function AdminAuditorPanel({ user, accounts, onRefreshAccounts })
                         {acc.accountNumber}
                       </div>
                       <div className="text-[10px] text-[#698675] font-mono">
-                        {acc.ownerEmail || 'System Entity'} • {formatBalance(acc.balance)}
+                        {acc.ownerEmail || 'System Entity'} • {formatBalance(acc.balance, 'INR', acc.isSystem || acc.accountNumber?.startsWith('ACC-SYSTEM'))}
                       </div>
                       <span className={`inline-block mt-1 text-[9px] font-mono px-2 py-0.5 rounded-full border ${
                         acc.status === 'ACTIVE'

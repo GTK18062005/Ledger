@@ -12,14 +12,23 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState(null);
 
+  const selectedSource = accounts.find(a => a.accountNumber === sourceAccount || a.id === sourceAccount) || accounts[0];
+  const maxAvailable = Math.max(0, parseFloat(selectedSource?.balance || 0));
+  const numAmount = parseFloat(amount) || 0;
+  const isOverdraft = numAmount > maxAvailable;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!recipientAccount.trim()) {
       setStatus({ type: 'error', text: 'Please enter the recipient account number or UUID.' });
       return;
     }
-    if (!amount || parseFloat(amount) <= 0) {
-      setStatus({ type: 'error', text: 'Please enter a valid transfer amount.' });
+    if (!amount || numAmount <= 0) {
+      setStatus({ type: 'error', text: 'Please enter a valid positive transfer amount.' });
+      return;
+    }
+    if (isOverdraft) {
+      setStatus({ type: 'error', text: `Cannot transfer ₹${numAmount.toFixed(2)}. Available balance is ₹${maxAvailable.toFixed(2)}. Negative balances are prohibited.` });
       return;
     }
 
@@ -29,18 +38,17 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
     const idempotencyKey = `tx-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
     try {
-      const selectedSource = accounts.find(a => a.accountNumber === sourceAccount || a.id === sourceAccount) || accounts[0];
       const payload = {
         sourceAccountId: selectedSource.id,
         destinationAccountId: recipientAccount.trim(),
-        amount: parseFloat(amount),
+        amount: numAmount,
         description: description.trim() || 'Peer-to-peer Transfer'
       };
 
       const res = await api.transfer(payload, idempotencyKey);
       setStatus({
         type: 'success',
-        text: `Successfully transferred ₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} to ${recipientAccount}. TxID: ${res.transactionId || 'Confirmed'}`
+        text: `Successfully transferred ₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} to ${recipientAccount}. TxID: ${res.transactionId || 'Confirmed'}`
       });
       setAmount('');
       setRecipientAccount('');
@@ -96,9 +104,14 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
-              From My Account
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-[#1e3c2c]">
+                From My Account
+              </label>
+              <span className="text-[11px] font-mono font-medium text-[#2d5c41]">
+                Available: ₹{maxAvailable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
             <select
               value={sourceAccount}
               onChange={(e) => setSourceAccount(e.target.value)}
@@ -106,7 +119,7 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
             >
               {accounts.map(acc => (
                 <option key={acc.id} value={acc.accountNumber || acc.id}>
-                  {acc.accountNumber} ({acc.currency}) — ₹{acc.balance}
+                  {acc.accountNumber} ({acc.currency}) — ₹{Math.max(0, parseFloat(acc.balance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </option>
               ))}
             </select>
@@ -127,22 +140,44 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
-              Amount (₹ INR)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-[#1e3c2c]">
+                Amount (₹ INR)
+              </label>
+              <button
+                type="button"
+                onClick={() => setAmount(maxAvailable.toString())}
+                className="text-[10px] font-mono uppercase font-bold text-[#133e2b] bg-[#eaf2e8] hover:bg-[#d8e8d5] px-2 py-0.5 rounded border border-[#cbdec7] transition"
+              >
+                Use Max (₹{maxAvailable.toFixed(2)})
+              </button>
+            </div>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-xs font-mono text-[#6c8a77]">₹</span>
               <input
                 type="number"
                 step="0.01"
                 min="0.01"
+                max={maxAvailable}
                 required
                 placeholder="250.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl pl-8 pr-3 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                className={`w-full bg-[#f8faf7] border rounded-xl pl-8 pr-16 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none transition ${
+                  isOverdraft
+                    ? 'border-rose-400 focus:border-rose-600 bg-rose-50/40'
+                    : 'border-[#d6e2d4] focus:border-[#133e2b]'
+                }`}
               />
+              <span className="absolute right-3.5 top-2.5 text-[10px] font-mono text-[#6c8a77]">INR</span>
             </div>
+
+            {isOverdraft && (
+              <div className="mt-1.5 text-[11px] text-rose-600 flex items-center space-x-1 font-sans">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Overdraft prohibited. Maximum available balance is ₹{maxAvailable.toFixed(2)}.</span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -168,10 +203,10 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
             </button>
             <button
               type="submit"
-              disabled={submitting || !amount || !recipientAccount.trim()}
-              className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition shadow-sm"
+              disabled={submitting || !amount || numAmount <= 0 || isOverdraft || !recipientAccount.trim()}
+              className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition shadow-sm"
             >
-              {submitting ? 'Verifying Ledger...' : 'Send Transfer'}
+              {submitting ? 'Verifying Ledger...' : isOverdraft ? 'Insufficient Funds' : 'Send Transfer'}
             </button>
           </div>
         </form>

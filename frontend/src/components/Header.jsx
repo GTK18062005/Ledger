@@ -101,10 +101,10 @@ export default function Header({ user, activeTab, onLogout, onSelectUser, onNavi
             <div className="absolute right-0 mt-2 w-48 bg-white border border-[#e2ece0] rounded-2xl shadow-lg p-1.5 z-50 text-xs">
               <button
                 onClick={() => handleNav('profile')}
-                className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-medium transition ${
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
                   activeTab === 'profile'
                     ? 'bg-[#eaf2e8] text-[#133e2b] font-semibold'
-                    : 'text-[#2a4536] hover:bg-[#f4f7f2] hover:text-[#122a1f]'
+                    : 'text-[#2a4536] hover:bg-[#edf4ec] hover:text-[#122a1f]'
                 }`}
               >
                 Profile
@@ -112,10 +112,10 @@ export default function Header({ user, activeTab, onLogout, onSelectUser, onNavi
 
               <button
                 onClick={() => handleNav('settings')}
-                className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-medium transition ${
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
                   activeTab === 'settings'
                     ? 'bg-[#eaf2e8] text-[#133e2b] font-semibold'
-                    : 'text-[#2a4536] hover:bg-[#f4f7f2] hover:text-[#122a1f]'
+                    : 'text-[#2a4536] hover:bg-[#edf4ec] hover:text-[#122a1f]'
                 }`}
               >
                 Settings
@@ -123,10 +123,10 @@ export default function Header({ user, activeTab, onLogout, onSelectUser, onNavi
 
               <button
                 onClick={() => handleNav('security')}
-                className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-medium transition ${
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
                   activeTab === 'security'
                     ? 'bg-[#eaf2e8] text-[#133e2b] font-semibold'
-                    : 'text-[#2a4536] hover:bg-[#f4f7f2] hover:text-[#122a1f]'
+                    : 'text-[#2a4536] hover:bg-[#edf4ec] hover:text-[#122a1f]'
                 }`}
               >
                 Security
@@ -136,45 +136,10 @@ export default function Header({ user, activeTab, onLogout, onSelectUser, onNavi
 
               <button
                 onClick={() => { setDropdownOpen(false); onLogout(); }}
-                className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-medium text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition"
+                className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-medium text-[#2a4536] hover:bg-rose-50 hover:text-rose-700 transition"
               >
                 Sign out
               </button>
-
-              {/* Fast persona switch for testing/demo */}
-              {onSelectUser && (
-                <div className="mt-1 pt-1 border-t border-[#edf3ec]">
-                  <div className="text-[9px] font-mono uppercase text-[#739481] px-2 py-0.5 font-semibold">
-                    Switch Persona
-                  </div>
-                  <div className="grid grid-cols-2 gap-1 px-1">
-                    <button
-                      onClick={() => { onSelectUser('alice@ledgerline.io', 'Password123!'); setDropdownOpen(false); }}
-                      className="px-2 py-1 text-left rounded-lg hover:bg-[#f2f6f1] text-[#1a4230] font-mono text-[10px]"
-                    >
-                      Alice
-                    </button>
-                    <button
-                      onClick={() => { onSelectUser('bob@ledgerline.io', 'Password123!'); setDropdownOpen(false); }}
-                      className="px-2 py-1 text-left rounded-lg hover:bg-[#f2f6f1] text-[#1a4230] font-mono text-[10px]"
-                    >
-                      Bob
-                    </button>
-                    <button
-                      onClick={() => { onSelectUser('admin@ledgerline.io', 'Password123!'); setDropdownOpen(false); }}
-                      className="px-2 py-1 text-left rounded-lg hover:bg-[#f2f6f1] text-[#1a4230] font-mono text-[10px]"
-                    >
-                      Admin
-                    </button>
-                    <button
-                      onClick={() => { onSelectUser('auditor@ledgerline.io', 'Password123!'); setDropdownOpen(false); }}
-                      className="px-2 py-1 text-left rounded-lg hover:bg-[#f2f6f1] text-[#1a4230] font-mono text-[10px]"
-                    >
-                      Auditor
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

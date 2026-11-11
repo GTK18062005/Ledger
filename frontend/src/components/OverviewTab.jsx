@@ -30,12 +30,13 @@ export default function OverviewTab({
     return 'Account holder';
   };
 
-  const activeAccounts = accounts.filter(a => a.status === 'ACTIVE');
+  const customerAccounts = accounts.filter(a => !a.isSystem && !a.accountNumber?.startsWith('ACC-SYSTEM'));
+  const activeAccounts = customerAccounts.filter(a => a.status === 'ACTIVE');
   const activeCount = activeAccounts.length;
-  const totalCountFormatted = String(accounts.length).padStart(2, '0');
+  const totalCountFormatted = String(customerAccounts.length).padStart(2, '0');
 
   const formatBalance = (val, currency = 'INR') => {
-    const num = parseFloat(val) || 0;
+    const num = Math.max(0, parseFloat(val) || 0);
     return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   };
 
@@ -116,10 +117,8 @@ export default function OverviewTab({
               </div>
             </div>
 
-            {/* Circular Ring Graphic */}
-            <div className="w-16 h-16 rounded-full border-4 border-[#eaf2e8] border-t-[#22c55e] flex items-center justify-center text-[10px] font-mono text-[#5c7a68]">
-              {accounts.length}
-            </div>
+            {/* Circular Ring Graphic Watermark */}
+            <div className="w-16 h-16 rounded-full border-2 border-[#edf4ec]" />
           </div>
 
           {/* Account status card */}
@@ -137,12 +136,14 @@ export default function OverviewTab({
               </div>
             </div>
 
-            {/* Status bar */}
-            <div className="w-full bg-[#eaf2e8] h-1.5 rounded-full mt-6 overflow-hidden">
-              <div 
-                className="bg-[#1a4a35] h-full rounded-full transition-all duration-500" 
-                style={{ width: accounts.length > 0 ? `${(activeCount / accounts.length) * 100}%` : '0%' }}
-              />
+            {/* Small status bar indicator on bottom right */}
+            <div className="flex justify-end mt-4">
+              <div className="w-14 bg-[#e5ede3] h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="bg-[#4a7c59] h-full rounded-full transition-all duration-500" 
+                  style={{ width: customerAccounts.length > 0 ? `${Math.max(20, (activeCount / customerAccounts.length) * 100)}%` : '50%' }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -167,9 +168,9 @@ export default function OverviewTab({
           </button>
         </div>
 
-        {accounts.length === 0 ? (
+        {customerAccounts.length === 0 ? (
           <div className="bg-white border border-[#e5ede3] rounded-2xl p-10 text-center shadow-xs">
-            <div className="w-10 h-10 rounded-full bg-[#f3efe6] text-[#6b5d49] flex items-center justify-center mx-auto mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[#edf4ec] text-[#40624c] flex items-center justify-center mx-auto mb-3 border border-[#dde8dc]">
               <CreditCard className="w-5 h-5" />
             </div>
             <h3 className="text-sm font-semibold text-[#122a1f]">No accounts yet</h3>
@@ -185,7 +186,7 @@ export default function OverviewTab({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accounts.map(acc => (
+            {customerAccounts.map(acc => (
               <div
                 key={acc.id}
                 className="bg-white border border-[#e5ede3] hover:border-[#b8d2ba] rounded-2xl p-5 flex flex-col justify-between transition-all shadow-xs group"
@@ -256,52 +257,52 @@ export default function OverviewTab({
           {/* Action 1: Deposit */}
           <div
             onClick={onOpenDeposit}
-            className="bg-[#f5f2ea] border border-[#e8e2d4] hover:border-[#cfc3ab] rounded-2xl p-5 cursor-pointer transition-all shadow-xs group"
+            className="bg-[#f8faf6] border border-[#e4ece2] hover:border-[#b8d2ba] rounded-2xl p-5 cursor-pointer transition-all shadow-xs group"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-8 h-8 rounded-xl bg-white/80 border border-[#e2d8c5] flex items-center justify-center text-[#554a37] group-hover:scale-105 transition">
-                <Plus className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-white border border-[#d6e2d3] flex items-center justify-center text-[#2a4d38] group-hover:scale-105 transition">
+                <Plus className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#8b7d67]">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#7e9988] font-medium">
                 OPEN
               </span>
             </div>
-            <div className="font-semibold text-sm text-[#2a2419]">Deposit</div>
-            <div className="text-xs text-[#756853] mt-0.5">Add funds</div>
+            <div className="font-semibold text-sm text-[#122a1f]">Deposit</div>
+            <div className="text-xs text-[#698675] mt-0.5">Add funds</div>
           </div>
 
           {/* Action 2: Withdraw */}
           <div
             onClick={onOpenWithdraw}
-            className="bg-[#f5f2ea] border border-[#e8e2d4] hover:border-[#cfc3ab] rounded-2xl p-5 cursor-pointer transition-all shadow-xs group"
+            className="bg-[#f8faf6] border border-[#e4ece2] hover:border-[#b8d2ba] rounded-2xl p-5 cursor-pointer transition-all shadow-xs group"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-8 h-8 rounded-xl bg-white/80 border border-[#e2d8c5] flex items-center justify-center text-[#554a37] group-hover:scale-105 transition">
-                <Plus className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-white border border-[#d6e2d3] flex items-center justify-center text-[#2a4d38] group-hover:scale-105 transition">
+                <Plus className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#8b7d67]">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#7e9988] font-medium">
                 OPEN
               </span>
             </div>
-            <div className="font-semibold text-sm text-[#2a2419]">Withdraw</div>
-            <div className="text-xs text-[#756853] mt-0.5">Move funds out</div>
+            <div className="font-semibold text-sm text-[#122a1f]">Withdraw</div>
+            <div className="text-xs text-[#698675] mt-0.5">Move funds out</div>
           </div>
 
           {/* Action 3: Transfer */}
           <div
             onClick={onOpenTransfer}
-            className="bg-[#f5f2ea] border border-[#e8e2d4] hover:border-[#cfc3ab] rounded-2xl p-5 cursor-pointer transition-all shadow-xs group"
+            className="bg-[#f8faf6] border border-[#e4ece2] hover:border-[#b8d2ba] rounded-2xl p-5 cursor-pointer transition-all shadow-xs group"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-8 h-8 rounded-xl bg-white/80 border border-[#e2d8c5] flex items-center justify-center text-[#554a37] group-hover:scale-105 transition">
-                <Plus className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-white border border-[#d6e2d3] flex items-center justify-center text-[#2a4d38] group-hover:scale-105 transition">
+                <Plus className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#8b7d67]">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#7e9988] font-medium">
                 OPEN
               </span>
             </div>
-            <div className="font-semibold text-sm text-[#2a2419]">Transfer</div>
-            <div className="text-xs text-[#756853] mt-0.5">Between accounts</div>
+            <div className="font-semibold text-sm text-[#122a1f]">Transfer</div>
+            <div className="text-xs text-[#698675] mt-0.5">Between accounts</div>
           </div>
         </div>
       </div>
