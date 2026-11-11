@@ -212,6 +212,24 @@ export const api = {
   // Admin & Auditor
   getAdminUsers: () => request('/admin/users'),
 
+  // Maker-Checker Account Opening Requests
+  createAccountRequest: (data) => request('/account-requests', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+
+  getAccountRequests: (status) => request(status ? `/account-requests?status=${status}` : '/account-requests'),
+
+  approveAccountRequest: (id, adminNotes) => request(`/account-requests/${id}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ adminNotes: adminNotes || 'Approved and provisioned vault by administrator' })
+  }),
+
+  rejectAccountRequest: (id, adminNotes) => request(`/account-requests/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ adminNotes: adminNotes || 'Declined during onboarding review' })
+  }),
+
   // Maker-Checker Deposit Approvals
   createDepositRequest: (data) => request('/deposit-requests', {
     method: 'POST',

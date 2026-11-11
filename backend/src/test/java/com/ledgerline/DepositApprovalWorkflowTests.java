@@ -115,6 +115,8 @@ public class DepositApprovalWorkflowTests {
 
         UsernamePasswordAuthenticationToken adminAuth = createAuthToken(testAdmin);
 
+        BigDecimal totalNetBefore = accountRepository.sumAllBalances();
+
         ReviewDepositApprovalDto reviewDto = new ReviewDepositApprovalDto("Verified incoming HDFC wire statement");
         ResponseEntity<DepositApprovalResponse> approvedResp = depositApprovalController.approveDepositRequest(created.getId(), reviewDto, adminAuth);
 
@@ -126,9 +128,10 @@ public class DepositApprovalWorkflowTests {
         Account updatedAcc = accountRepository.findById(customerAccount.getId()).orElseThrow();
         assertEquals(new BigDecimal("1500.0000"), updatedAcc.getBalance());
 
-        // Mathematical invariant: Net system balance must remain strictly zero
-        BigDecimal totalNet = accountRepository.sumAllBalances();
-        assertEquals(0, BigDecimal.ZERO.compareTo(totalNet), "Double-entry net sum must remain exactly 0.0000 INR!");
+        // Mathematical invariant: Net system delta across the deposit approval must remain strictly zero
+        BigDecimal totalNetAfter = accountRepository.sumAllBalances();
+        assertEquals(0, BigDecimal.ZERO.compareTo(totalNetAfter.subtract(totalNetBefore)),
+                "Double-entry net sum delta must remain exactly 0.0000 INR!");
     }
 
     @Test

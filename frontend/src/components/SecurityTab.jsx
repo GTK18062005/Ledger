@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyRound, Shield, ShieldCheck, CheckCircle2, AlertCircle, Eye, EyeOff, Lock } from 'lucide-react';
+import { KeyRound, ShieldCheck, CheckCircle2, AlertCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { api } from '../api';
 
 export default function SecurityTab({ user }) {
@@ -44,7 +44,7 @@ export default function SecurityTab({ user }) {
       });
       setMessage({
         type: 'success',
-        text: res.message || 'Password changed successfully. Your financial vault is secured.'
+        text: res.message || 'Password updated successfully. Your workspace security credentials are active.'
       });
       setCurrentPassword('');
       setNewPassword('');
@@ -57,28 +57,27 @@ export default function SecurityTab({ user }) {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Header Eyebrow & Title */}
+    <div className="space-y-6 max-w-3xl pb-12">
       <div>
-        <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a] font-semibold">
-          AUTHENTICATION & SECURITY
+        <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 font-bold">
+          AUTHENTICATION & CREDENTIALS
         </div>
-        <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#122a1f] mt-1">
-          Security
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">
+          Security Controls
         </h1>
-        <p className="text-xs sm:text-sm text-[#52705e] mt-1 font-sans">
-          Manage your access credentials and protect your financial vault.
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Rotate your cryptographic access credentials and verify institutional security standards.
         </p>
       </div>
 
       {message && (
-        <div className={`p-4 rounded-2xl text-xs flex items-center space-x-2.5 transition ${
+        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2.5 ${
           message.type === 'success'
-            ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
+            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
             : 'bg-rose-50 text-rose-700 border border-rose-200'
         }`}>
           {message.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-[#133e2b]" />
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           ) : (
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
           )}
@@ -87,19 +86,18 @@ export default function SecurityTab({ user }) {
       )}
 
       {/* Change Password Card */}
-      <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-8 shadow-xs">
-        <div className="flex items-center space-x-2 border-b border-[#edf3ec] pb-3 mb-5">
-          <KeyRound className="w-4 h-4 text-[#133e2b]" />
-          <h2 className="text-base font-semibold text-[#122a1f]">
-            Change Password
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-2xs">
+        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3.5 mb-5">
+          <KeyRound className="w-4 h-4 text-indigo-600" />
+          <h2 className="text-base font-bold text-slate-900">
+            Update Password
           </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Current Password */}
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Current password
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Current Password
             </label>
             <div className="relative">
               <input
@@ -108,22 +106,21 @@ export default function SecurityTab({ user }) {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter your current password"
-                className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#122a1f] font-sans focus:outline-none focus:border-[#133e2b] focus:bg-white transition pr-10"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowCurrent(!showCurrent)}
-                className="absolute right-3.5 top-3 text-[#6c8a77] hover:text-[#122a1f]"
+                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700"
               >
                 {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          {/* New Password */}
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              New password
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              New Password
             </label>
             <div className="relative">
               <input
@@ -133,25 +130,24 @@ export default function SecurityTab({ user }) {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#122a1f] font-sans focus:outline-none focus:border-[#133e2b] focus:bg-white transition pr-10"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowNew(!showNew)}
-                className="absolute right-3.5 top-3 text-[#6c8a77] hover:text-[#122a1f]"
+                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700"
               >
                 {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[11px] text-[#6c8a77] mt-1">
-              Must be at least 6 characters. Use letters, numbers, and symbols.
+            <p className="text-[11px] text-slate-400 mt-1">
+              Recommended: combine uppercase, lowercase, digits, and symbols.
             </p>
           </div>
 
-          {/* Confirm New Password */}
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Confirm new password
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Confirm New Password
             </label>
             <input
               type="password"
@@ -159,7 +155,7 @@ export default function SecurityTab({ user }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter your new password"
-              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#122a1f] font-sans focus:outline-none focus:border-[#133e2b] focus:bg-white transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition"
             />
           </div>
 
@@ -167,88 +163,86 @@ export default function SecurityTab({ user }) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full sm:w-auto px-6 py-3 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-50 text-white rounded-2xl text-xs sm:text-sm font-semibold transition shadow-xs flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-2xs inline-flex items-center justify-center space-x-2"
             >
               <Lock className="w-4 h-4" />
-              <span>{submitting ? 'Updating password...' : 'Update password'}</span>
+              <span>{submitting ? 'Updating Credentials...' : 'Update Password'}</span>
             </button>
           </div>
         </form>
       </div>
 
       {/* Security Safeguards Status Card */}
-      <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-8 shadow-xs">
-        <div className="flex items-center space-x-2 border-b border-[#edf3ec] pb-3 mb-5">
-          <ShieldCheck className="w-4 h-4 text-[#133e2b]" />
-          <h2 className="text-base font-semibold text-[#122a1f]">
-            Vault Protection Standards
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-2xs">
+        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3.5 mb-5">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <h2 className="text-base font-bold text-slate-900">
+            Institutional Protection Standards
           </h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 bg-[#f8faf7] border border-[#e5ede3] rounded-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#5c7c6a] font-semibold">
+          <div className="p-4 bg-slate-50 border border-slate-200/70 rounded-xl">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 font-bold">
               SESSION AUTHENTICATION
             </div>
-            <div className="text-sm font-semibold text-[#122a1f] mt-1 flex items-center space-x-1.5">
+            <div className="text-sm font-bold text-slate-900 mt-1 flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>HMAC-SHA256 JWT Token</span>
             </div>
-            <p className="text-[11px] text-[#6c8a77] mt-1">
-              Cryptographically signed bearer token issued by BalanceVault engine.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Cryptographically signed bearer token validated per request.
             </p>
           </div>
 
-          <div className="p-4 bg-[#f8faf7] border border-[#e5ede3] rounded-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#5c7c6a] font-semibold">
+          <div className="p-4 bg-slate-50 border border-slate-200/70 rounded-xl">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 font-bold">
               MAKER-CHECKER ENFORCEMENT
             </div>
-            <div className="text-sm font-semibold text-[#122a1f] mt-1 flex items-center space-x-1.5">
+            <div className="text-sm font-bold text-slate-900 mt-1 flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>Dual-Control Active</span>
             </div>
-            <p className="text-[11px] text-[#6c8a77] mt-1">
-              External deposits require independent administrator verification.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Deposits and account openings require administrator sign-off.
             </p>
           </div>
 
-          <div className="p-4 bg-[#f8faf7] border border-[#e5ede3] rounded-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#5c7c6a] font-semibold">
+          <div className="p-4 bg-slate-50 border border-slate-200/70 rounded-xl">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 font-bold">
               RATE LIMITING PROTECTION
             </div>
-            <div className="text-sm font-semibold text-[#122a1f] mt-1 flex items-center space-x-1.5">
+            <div className="text-sm font-bold text-slate-900 mt-1 flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>Redis Sliding-Window Guard</span>
+              <span>Sliding-Window Throttle</span>
             </div>
-            <p className="text-[11px] text-[#6c8a77] mt-1">
-              Guards against brute-force attacks and denial-of-service abuse.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Protects transfer & login routes from abuse and replay floods.
             </p>
           </div>
 
-          <div className="p-4 bg-[#f8faf7] border border-[#e5ede3] rounded-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#5c7c6a] font-semibold">
-              LEDGER IMMUTABILITY
+          <div className="p-4 bg-slate-50 border border-slate-200/70 rounded-xl">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 font-bold">
+              NON-NEGATIVE BALANCE GUARD
             </div>
-            <div className="text-sm font-semibold text-[#122a1f] mt-1 flex items-center space-x-1.5">
+            <div className="text-sm font-bold text-slate-900 mt-1 flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>Append-Only Postings</span>
+              <span>Pessimistic Row Locks</span>
             </div>
-            <p className="text-[11px] text-[#6c8a77] mt-1">
-              PostgreSQL trigger aborts any UPDATE or DELETE attempt on financial entries.
+            <p className="text-[11px] text-slate-500 mt-1">
+              Database CHECK constraints and deterministic locking prevent overdrafts.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Swiss Depository Footer */}
-      <div className="pt-8 border-t border-[#e5ede3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#6a8776]">
-        <div>BalanceVault — Financial clarity, by design</div>
+      <div className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div>LedgerLine Institutional Infrastructure</div>
         <div className="flex items-center space-x-1.5 text-[11px] font-mono">
-          <Lock className="w-3.5 h-3.5 text-[#597866]" />
-          <span>Secure session</span>
+          <Lock className="w-3.5 h-3.5 text-emerald-500" />
+          <span>AES-256 Encrypted Session</span>
         </div>
       </div>
     </div>
   );
 }
-

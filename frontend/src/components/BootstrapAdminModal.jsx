@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, CheckCircle2, AlertCircle, X, ShieldAlert, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, ArrowRight } from 'lucide-react';
 import { api } from '../api';
 
 export default function BootstrapAdminModal({ isOpen, onClose }) {
@@ -39,11 +39,11 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-      <div className="bg-white border border-[#e5ede3] rounded-3xl w-full max-w-md p-7 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative">
         <button
           onClick={handleReset}
-          className="absolute top-5 right-5 text-[#6c8a77] hover:text-[#122a1f] p-1 rounded-lg"
+          className="absolute top-5 right-5 text-slate-400 hover:text-slate-800 p-1 rounded-lg transition"
         >
           <X className="w-5 h-5" />
         </button>
@@ -51,14 +51,14 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
         {!successResult ? (
           <div>
             <div className="mb-5">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a]">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 font-bold">
                 INITIALIZATION SECURITY
               </div>
-              <h3 className="font-serif text-2xl font-normal text-[#122a1f] mt-0.5">
+              <h3 className="text-xl font-bold text-slate-900 mt-1">
                 First-Admin Bootstrap
               </h3>
-              <p className="text-xs text-[#52705e] mt-1">
-                Zero-trust bootstrap script. Only succeeds if zero administrators exist in the ledger system.
+              <p className="text-xs text-slate-500 mt-1">
+                Zero-trust bootstrap mechanism. Succeeds only if zero administrators exist in the depository.
               </p>
             </div>
 
@@ -71,7 +71,7 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Administrator Email
                 </label>
                 <input
@@ -79,12 +79,12 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Administrator Password
                 </label>
                 <input
@@ -92,12 +92,12 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1e3c2c] mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Bootstrap Authorization Token
                 </label>
                 <input
@@ -105,7 +105,7 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
                   required
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -113,14 +113,14 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-4 py-2 text-xs font-semibold text-[#52705e]"
+                  className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition shadow-2xs flex items-center space-x-2"
                 >
                   <span>{loading ? 'Bootstrapping...' : 'Execute Bootstrap'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -130,28 +130,28 @@ export default function BootstrapAdminModal({ isOpen, onClose }) {
           </div>
         ) : (
           <div className="text-center py-4 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-[#eaf2e8] text-[#133e2b] flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
               <CheckCircle2 className="w-6 h-6" />
             </div>
 
             <div>
-              <h3 className="font-serif text-2xl font-normal text-[#122a1f]">
+              <h3 className="text-xl font-bold text-slate-900">
                 Administrator Created
               </h3>
-              <p className="text-xs text-[#52705e] mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 First-Admin successfully initialized.
               </p>
             </div>
 
-            <div className="bg-[#f8faf7] border border-[#eaf0e8] rounded-2xl p-4 text-left font-mono text-xs space-y-2">
-              <div><span className="text-[#6c8a77]">Admin ID:</span> {successResult.userId}</div>
-              <div><span className="text-[#6c8a77]">Email:</span> {successResult.email}</div>
-              <div><span className="text-[#6c8a77]">Role:</span> <span className="font-bold text-[#133e2b]">{successResult.role}</span></div>
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left font-mono text-xs space-y-2">
+              <div><span className="text-slate-400">Admin ID:</span> {successResult.userId}</div>
+              <div><span className="text-slate-400">Email:</span> {successResult.email}</div>
+              <div><span className="text-slate-400">Role:</span> <span className="font-bold text-indigo-700">{successResult.role}</span></div>
             </div>
 
             <button
               onClick={handleReset}
-              className="w-full py-2.5 bg-[#133e2b] text-white font-semibold rounded-xl text-xs"
+              className="w-full py-2.5 bg-[#0f172a] hover:bg-slate-800 text-white font-semibold rounded-xl text-xs"
             >
               Close
             </button>

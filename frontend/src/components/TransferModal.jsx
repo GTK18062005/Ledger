@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ArrowRightLeft, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../api';
 
 export default function TransferModal({ isOpen, onClose, accounts, user, onRefresh }) {
@@ -48,7 +48,7 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
       const res = await api.transfer(payload, idempotencyKey);
       setStatus({
         type: 'success',
-        text: `Successfully transferred ₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} to ${recipientAccount}. TxID: ${res.transactionId || 'Confirmed'}`
+        text: `Transferred ₹${numAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} to ${recipientAccount}. TxID: ${res.transactionId || 'Confirmed'}`
       });
       setAmount('');
       setRecipientAccount('');
@@ -66,32 +66,32 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-      <div className="bg-white border border-[#e5ede3] rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 sm:p-7 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 text-[#6c8a77] hover:text-[#122a1f] transition"
+          className="absolute right-5 top-5 text-slate-400 hover:text-slate-800 transition"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="mb-5">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a]">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 font-bold">
             DOUBLE-ENTRY ENGINE
           </div>
-          <h3 className="font-serif text-2xl font-normal text-[#122a1f] mt-0.5">
-            Transfer money
+          <h3 className="text-xl font-bold text-slate-900 mt-1">
+            Transfer Money
           </h3>
-          <p className="text-xs text-[#52705e] mt-1">
-            Instant peer-to-peer transfer with row-level locks and idempotency guarantees.
+          <p className="text-xs text-slate-500 mt-1">
+            Instant peer-to-peer transfer with deterministic row-level locks and idempotency guarantees.
           </p>
         </div>
 
         {status && (
-          <div className={`p-3.5 rounded-xl text-xs mb-4 flex items-center space-x-2 ${
+          <div className={`p-3.5 rounded-xl text-xs mb-4 flex items-center space-x-2 font-medium ${
             status.type === 'success'
-              ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
-              : 'bg-[#fff5f5] text-[#b91c1c] border border-[#fed7d7]'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-rose-50 text-rose-700 border border-rose-200'
           }`}>
             {status.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -105,17 +105,17 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-[#1e3c2c]">
-                From My Account
+              <label className="block text-xs font-semibold text-slate-700">
+                From Source Account
               </label>
-              <span className="text-[11px] font-mono font-medium text-[#2d5c41]">
+              <span className="text-[11px] font-mono font-semibold text-emerald-700">
                 Available: ₹{maxAvailable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <select
               value={sourceAccount}
               onChange={(e) => setSourceAccount(e.target.value)}
-              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
             >
               {accounts.map(acc => (
                 <option key={acc.id} value={acc.accountNumber || acc.id}>
@@ -126,7 +126,7 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Recipient Account Number or ID
             </label>
             <input
@@ -135,25 +135,25 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
               placeholder="e.g. ACC-BOB-2002 or Account UUID"
               value={recipientAccount}
               onChange={(e) => setRecipientAccount(e.target.value)}
-              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none focus:border-[#133e2b]"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-[#1e3c2c]">
-                Amount (₹ INR)
+              <label className="block text-xs font-semibold text-slate-700">
+                Amount ({selectedSource?.currency || 'INR'})
               </label>
               <button
                 type="button"
                 onClick={() => setAmount(maxAvailable.toString())}
-                className="text-[10px] font-mono uppercase font-bold text-[#133e2b] bg-[#eaf2e8] hover:bg-[#d8e8d5] px-2 py-0.5 rounded border border-[#cbdec7] transition"
+                className="text-[10px] font-mono uppercase font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 transition"
               >
                 Use Max (₹{maxAvailable.toFixed(2)})
               </button>
             </div>
             <div className="relative">
-              <span className="absolute left-3.5 top-2.5 text-xs font-mono text-[#6c8a77]">₹</span>
+              <span className="absolute left-3.5 top-2.5 text-xs font-mono text-slate-400">₹</span>
               <input
                 type="number"
                 step="0.01"
@@ -163,17 +163,19 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
                 placeholder="250.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className={`w-full bg-[#f8faf7] border rounded-xl pl-8 pr-16 py-2.5 text-xs text-[#122a1f] font-mono focus:outline-none transition ${
+                className={`w-full bg-slate-50 border rounded-xl pl-8 pr-16 py-2.5 text-xs text-slate-900 font-mono focus:outline-none transition ${
                   isOverdraft
                     ? 'border-rose-400 focus:border-rose-600 bg-rose-50/40'
-                    : 'border-[#d6e2d4] focus:border-[#133e2b]'
+                    : 'border-slate-200 focus:border-indigo-500'
                 }`}
               />
-              <span className="absolute right-3.5 top-2.5 text-[10px] font-mono text-[#6c8a77]">INR</span>
+              <span className="absolute right-3.5 top-2.5 text-[10px] font-mono text-slate-400">
+                {selectedSource?.currency || 'INR'}
+              </span>
             </div>
 
             {isOverdraft && (
-              <div className="mt-1.5 text-[11px] text-rose-600 flex items-center space-x-1 font-sans">
+              <div className="mt-1.5 text-[11px] text-rose-600 flex items-center space-x-1">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>Overdraft prohibited. Maximum available balance is ₹{maxAvailable.toFixed(2)}.</span>
               </div>
@@ -181,7 +183,7 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Memo / Note
             </label>
             <input
@@ -189,7 +191,7 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
               placeholder="e.g. Monthly rent settlement or project milestone"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-xl px-3.5 py-2.5 text-xs text-[#122a1f] focus:outline-none focus:border-[#133e2b]"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -197,14 +199,14 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-xs font-semibold text-[#52705e] hover:text-[#122a1f]"
+              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !amount || numAmount <= 0 || isOverdraft || !recipientAccount.trim()}
-              className="px-5 py-2.5 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition shadow-sm"
+              className="px-5 py-2 bg-[#0f172a] hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition shadow-2xs"
             >
               {submitting ? 'Verifying Ledger...' : isOverdraft ? 'Insufficient Funds' : 'Send Transfer'}
             </button>
@@ -214,4 +216,3 @@ export default function TransferModal({ isOpen, onClose, accounts, user, onRefre
     </div>
   );
 }
-

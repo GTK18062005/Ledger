@@ -136,11 +136,22 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
-                    <argLine>-Xmx1024m -XX:+EnableDynamicAgentLoading</argLine>
+                    <argLine>-Xmx1024m -XX:+EnableDynamicAgentLoading -javaagent:"${net.bytebuddy:byte-buddy-agent:jar}"</argLine>
                 </configuration>
             </plugin>
         </plugins>

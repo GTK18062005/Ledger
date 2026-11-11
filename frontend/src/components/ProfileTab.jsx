@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User as UserIcon, CheckCircle2, AlertCircle, Save, Lock } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Save, Lock } from 'lucide-react';
 import { api, setStoredUser, getStoredUser } from '../api';
 
 export default function ProfileTab({ user, onUserUpdated }) {
@@ -20,7 +20,6 @@ export default function ProfileTab({ user, onUserUpdated }) {
       setProfile(data);
       setFullName(data.fullName || '');
     } catch (err) {
-      // Fallback from local user state
       const fallbackName = user?.fullName || (user?.email?.includes('tharun') ? 'Tharun Kumar Gangavarapu' : user?.email?.split('@')[0]);
       setFullName(fallbackName);
       setProfile({
@@ -48,8 +47,7 @@ export default function ProfileTab({ user, onUserUpdated }) {
       const updated = await api.updateProfile({ fullName: fullName.trim() });
       setProfile(updated);
       setFullName(updated.fullName);
-      
-      // Update stored user
+
       const stored = getStoredUser() || {};
       const newStored = { ...stored, fullName: updated.fullName };
       setStoredUser(newStored);
@@ -86,34 +84,33 @@ export default function ProfileTab({ user, onUserUpdated }) {
   const formatRoleDisplay = (role) => {
     if (!role) return 'Account holder';
     const r = role.toUpperCase();
-    if (r === 'ADMIN') return 'Administrator';
-    if (r === 'AUDITOR') return 'Auditor';
-    return 'Account holder';
+    if (r === 'ADMIN') return 'System Administrator';
+    if (r === 'AUDITOR') return 'Compliance Auditor';
+    return 'Account Holder';
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Header Eyebrow & Title */}
+    <div className="space-y-6 max-w-3xl pb-12">
       <div>
-        <div className="text-[10px] font-mono uppercase tracking-widest text-[#5c7c6a] font-semibold">
-          YOUR ACCOUNT
+        <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 font-bold">
+          PRINCIPAL IDENTITY
         </div>
-        <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#122a1f] mt-1">
-          Profile
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">
+          Profile Settings
         </h1>
-        <p className="text-xs sm:text-sm text-[#52705e] mt-1 font-sans">
-          Review and update your personal details.
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Review and update your registered depository profile details.
         </p>
       </div>
 
       {message && (
-        <div className={`p-4 rounded-2xl text-xs flex items-center space-x-2.5 transition ${
+        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2.5 ${
           message.type === 'success'
-            ? 'bg-[#eaf2e8] text-[#133e2b] border border-[#cbdec7]'
+            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
             : 'bg-rose-50 text-rose-700 border border-rose-200'
         }`}>
           {message.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-[#133e2b]" />
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           ) : (
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
           )}
@@ -121,99 +118,95 @@ export default function ProfileTab({ user, onUserUpdated }) {
         </div>
       )}
 
-      {/* Main Form Container */}
-      <div className="bg-white border border-[#e5ede3] rounded-3xl p-6 sm:p-8 shadow-xs">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-2xs">
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Full Name */}
           <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Full name
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Full Legal Name
             </label>
             <input
               type="text"
               required
+              disabled={loading}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Tharun Kumar Gangavarapu"
-              className="w-full bg-[#f8faf7] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#122a1f] font-sans focus:outline-none focus:border-[#133e2b] focus:bg-white transition"
+              placeholder="e.g. Alice Vance"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition"
             />
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              readOnly
-              value={profile?.email || user?.email || ''}
-              className="w-full bg-[#f4f7f3] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#52705e] font-sans cursor-not-allowed select-all"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Registered Email
+              </label>
+              <input
+                type="email"
+                readOnly
+                value={profile?.email || user?.email || ''}
+                className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-500 cursor-not-allowed select-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Authorization Role
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={formatRoleDisplay(profile?.role || user?.role)}
+                className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-700 font-semibold cursor-not-allowed"
+              />
+            </div>
           </div>
 
-          {/* Role */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Role
-            </label>
-            <input
-              type="text"
-              readOnly
-              value={formatRoleDisplay(profile?.role || user?.role)}
-              className="w-full bg-[#f4f7f3] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#52705e] font-sans cursor-not-allowed"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Account Status
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={profile?.status || 'Active'}
+                className="w-full bg-emerald-50/70 border border-emerald-200 rounded-xl px-4 py-2.5 text-xs text-emerald-700 font-mono font-bold cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Member Since
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={formatMemberSince(profile?.memberSince)}
+                className="w-full bg-slate-100/70 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-500 cursor-not-allowed"
+              />
+            </div>
           </div>
 
-          {/* Account Status */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Account status
-            </label>
-            <input
-              type="text"
-              readOnly
-              value={profile?.status || 'Active'}
-              className="w-full bg-[#f4f7f3] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#133e2b] font-medium font-sans cursor-not-allowed"
-            />
-          </div>
-
-          {/* Member Since */}
-          <div>
-            <label className="block text-xs font-semibold text-[#1e3c2c] mb-2">
-              Member since
-            </label>
-            <input
-              type="text"
-              readOnly
-              value={formatMemberSince(profile?.memberSince)}
-              className="w-full bg-[#f4f7f3] border border-[#d6e2d4] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#52705e] font-sans cursor-not-allowed"
-            />
-          </div>
-
-          {/* Submit Button */}
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               type="submit"
-              disabled={saving}
-              className="w-full sm:w-auto px-6 py-3 bg-[#133e2b] hover:bg-[#0e2e1f] disabled:opacity-50 text-white rounded-2xl text-xs sm:text-sm font-semibold transition shadow-xs flex items-center justify-center space-x-2"
+              disabled={saving || loading}
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-2xs inline-flex items-center justify-center space-x-2"
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving changes...' : 'Save changes'}</span>
+              <span>{saving ? 'Saving changes...' : 'Save Profile Changes'}</span>
             </button>
           </div>
         </form>
       </div>
 
-      {/* Swiss Depository Footer */}
-      <div className="pt-8 border-t border-[#e5ede3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#6a8776]">
-        <div>BalanceVault — Financial clarity, by design</div>
+      <div className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div>LedgerLine Institutional Infrastructure</div>
         <div className="flex items-center space-x-1.5 text-[11px] font-mono">
-          <Lock className="w-3.5 h-3.5 text-[#597866]" />
-          <span>Secure session</span>
+          <Lock className="w-3.5 h-3.5 text-emerald-500" />
+          <span>AES-256 Encrypted Session</span>
         </div>
       </div>
     </div>
   );
 }
-
